@@ -36,5 +36,18 @@ int main(){
     std::cout << typeid(j2).name() << std::endl;
     std::cout << typeid(k2).name() << std::endl;
 
+    /*2.36*/
+    #if 0
+    int a = 3, b = 4; //int, b=4
+    decltype(a) c = a; //int, c=3
+    decltype((b)) d = a; // int &
+    ++c;//c=4
+    ++d; //a=4, d=4
+    #endif
+
+    /*2.37*/
+    int a = 3, b = 4;//int b=4
+    decltype(a) c = a;//int,c=3
+    decltype(a = b) d = a; //int &, d=3, a=3
 
 }
