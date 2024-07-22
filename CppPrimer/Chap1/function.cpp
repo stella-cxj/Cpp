@@ -76,7 +76,28 @@ string make_plural(size_t ctr, const string &word, const string &ending = "s") {
     return (ctr > 1) ? word+ending : word;
 }
 
+/*6.54*/
+int func(int, int);
+using F = int (*)(int, int);
+vector<F> fvec;
+
+/*6.55*/
+int sum(int a, int b) {
+    return (a+b);
+}
+int sub(int a, int b){
+    return (a-b);
+}
+int multi(int a, int b) {
+    return (a*b);
+}
+int divid(int a, int b) {
+    return (b!=0) ? (a/b) : 0 ;
+}
+
+
 int main(int argc, char *argv[]) {
+
     /*6.17*/
     string s;
     cout << "Please enter a string: " << endl;
@@ -118,5 +139,16 @@ int main(int argc, char *argv[]) {
     cout << make_plural(1, "success", "es") << "\t" << make_plural(2, "success", "es ") << endl;
     cout << make_plural(1, "failure") << "\t" << make_plural(2, "failure") << endl;
 
+    /*6.55*/
+    fvec.push_back(sum);
+    fvec.push_back(sub);
+    fvec.push_back(multi);
+    fvec.push_back(divid);
+
+    /*6.56*/
+    int num1 = 1, num2 = 2;
+    for (auto i : fvec) {
+        cout << i(num1, num2) << endl;
+    }
 
 }
