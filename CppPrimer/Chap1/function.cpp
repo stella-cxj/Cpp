@@ -40,8 +40,11 @@ int summary(initializer_list<int> list) {
         ret += i;
     return ret;
 }
-
+//#define NDEBUG
 void print(vector<int> ivec, int index) {
+    #ifndef NDEBUG
+    cout << "vector size is " << ivec.size() << ", index is " << index << endl;
+    #endif
     if (index < ivec.size()) {
         cout << ivec[index] << "\t";
         print(ivec, index + 1);
@@ -66,6 +69,11 @@ int odd[] = {1,3,5,7,9};
 int even[] = {0,2,4,6,8};
 decltype(odd) &arrPtr(int i) {
     return (i%2) ? odd : even;
+}
+
+/*6.42*/
+string make_plural(size_t ctr, const string &word, const string &ending = "s") {
+    return (ctr > 1) ? word+ending : word;
 }
 
 int main(int argc, char *argv[]) {
@@ -105,5 +113,10 @@ int main(int argc, char *argv[]) {
     vector<int> ivec = {34,7,2,5,82,45,3,6};
     print(ivec, 0);    
     cout << endl;
+
+    /*6.42*/
+    cout << make_plural(1, "success", "es") << "\t" << make_plural(2, "success", "es ") << endl;
+    cout << make_plural(1, "failure") << "\t" << make_plural(2, "failure") << endl;
+
 
 }
