@@ -34,3 +34,8 @@ int main() {
 
     return 0;
 }
+/*7.36*/
+struct X {
+    X (int i, int j) : base(i), rem(base % j) {}
+    int base, rem;
+};
