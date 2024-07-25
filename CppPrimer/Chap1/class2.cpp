@@ -9,7 +9,7 @@ friend    ostream &print(ostream &os, const Person &per);
 public:
     Person() = default;
     Person(const string &person_name, const string &address) : name(person_name), addr(address) {}
-    Person(istream &is) {
+    explicit Person(istream &is) {
         read(is, *this);
     }
     string get_name() const {return name;}
@@ -97,11 +97,7 @@ int main() {
 
     return 0;
 }
-/*7.36*/
-struct X {
-    X (int i, int j) : base(i), rem(base % j) {}
-    int base, rem;
-};
+
 /*7.31*/
 class Y;
 class X {
@@ -111,4 +107,20 @@ class Y {
     X x;
 };
 
+/*7.36*/
+struct Z {
+    Z (int i, int j) : base(i), rem(base % j) {}
+    int base, rem;
+};
 
+/*7.43*/
+class NoDefault{
+public:
+    NoDefault(int x) {}
+};
+
+class C {
+public:
+    C() : nodefault(0) {}
+    NoDefault nodefault;
+};
