@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <list>
+#include <deque>
 
 using namespace std;
 /*9.4*/
@@ -84,6 +85,43 @@ int main() {
     list<int>ilist2{1,2,3,4,5,6,7};
     cout << compare(ilist2, vec) << endl;
 
-    
+    /*9.18*/
+    deque<string> sque;
+    string s;
+    cout << "please enter some strings:" << endl;
+    while(cin >> s)
+        sque.push_back(s);
+    for (auto i : sque)
+        cout << i << endl;
+    cin.clear();
+
+    /*9.19*/
+    list<string> slist;
+    string ss;
+    cout << "please enter some strings:" << endl;
+    while(cin >> ss)
+        slist.push_back(ss);
+    for (auto i : slist)
+        cout << i << endl;
+    cin.clear();
+
+    /*9.20*/
+    list<int> ilist3 = {1,2,3,4,5};
+    deque<int> ique1, ique2;
+    for (auto i : ilist3) {
+        if (i % 2 == 0) {
+            ique1.push_back(i);
+        } else {
+            ique2.push_back(i);
+        }
+    }
+    cout << "deque1" << endl;
+    for (auto i : ique1)
+        cout << i << endl;
+    cout << "deque2" << endl;
+    for (auto i : ique2)
+        cout << i << endl;
+         
+    /**/
 }
 
