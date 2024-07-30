@@ -122,6 +122,40 @@ int main() {
     for (auto i : ique2)
         cout << i << endl;
          
-    /**/
+    /*9.24*/
+    vector<int> ivec3 = {4};
+    int a = ivec3.at(0);
+    int b = ivec3[0];
+    int c = ivec3.front();
+    int d = *(ivec3.begin());
+    cout << a << b << c << d << endl;
+
+    /*9.26*/
+    int ia[] = {0,1,1,2,3,5,8,13,21,55,89};
+    vector<int> ivec4;
+    list<int> ilist4;
+    ivec4.assign(ia, ia+11);
+    ilist4.assign(ia, ia+11);
+
+    for (auto i = ilist4.begin(); i != ilist4.end(); ) {
+        if ((*i % 2) != 0) 
+            i = ilist4.erase(i);
+        else
+            ++i;
+    }
+    for (auto i : ilist4) 
+        cout << i << "\t";
+    cout << endl;
+
+    for (auto i = ivec4.begin(); i != ivec4.end();) {
+        if ((*i % 2) == 0) 
+            i = ivec4.erase(i);
+        else
+            ++i;
+    }
+    for (auto i : ivec4) 
+        cout << i << "\t";
+    cout << endl;
+        
 }
 
