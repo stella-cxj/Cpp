@@ -3,6 +3,7 @@
 #include <string>
 #include <list>
 #include <deque>
+#include <forward_list>
 
 using namespace std;
 /*9.4*/
@@ -43,6 +44,25 @@ bool compare(list<int> il, vector<int> iv) {
     }
     return true;
 }
+
+/*9.28*/
+void inserts(forward_list<string> &flist, const string &s1, const string &s2) {
+    auto curr = flist.begin();
+    auto prev = flist.before_begin();
+    while(curr != flist.end()) {
+        if (*curr == s1) {
+            curr = flist.insert_after(curr, s2);
+            return;
+        } else {
+            prev = curr;
+            ++curr;
+        }
+    }
+    curr = flist.insert_after(prev, s2);
+    return;
+
+}
+
 
 int main() {
     /*9.4*/
@@ -117,10 +137,12 @@ int main() {
     }
     cout << "deque1" << endl;
     for (auto i : ique1)
-        cout << i << endl;
+        cout << i << "\t";
+    cout << endl;
     cout << "deque2" << endl;
     for (auto i : ique2)
-        cout << i << endl;
+        cout << i << "\t";
+    cout << endl;
          
     /*9.24*/
     vector<int> ivec3 = {4};
@@ -157,5 +179,28 @@ int main() {
         cout << i << "\t";
     cout << endl;
         
+    /*9.27*/
+    forward_list<int> flist = {0,1,2,3,4,5};    
+    for (auto curr = flist.begin(), prev = flist.before_begin(); curr != flist.end();) {
+        if (*curr % 2) {
+            curr = flist.erase_after(prev);
+        } else {
+            prev = curr;
+            ++curr;
+        }
+    }
+    for (auto i : flist)
+        cout << i << "\t";
+    cout << endl;
+
+    /*9.28*/
+    forward_list<string> flist1 = {"aa", "bb", "cc", "dd"};
+    string s1 = "aa", s2 = "ab";
+    inserts(flist1, s1, s2);
+    for (auto i : flist1) {
+        cout << i << "\t";
+    }
+    cout << endl;
+
 }
 
