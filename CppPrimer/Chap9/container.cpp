@@ -62,7 +62,63 @@ void inserts(forward_list<string> &flist, const string &s1, const string &s2) {
     return;
 
 }
+/*9.43*/
+void fix_string(string &s, const string &oldVal, const string &newVal) {
+    int count = 0;
+    if (s.size() < oldVal.size())
+        return;
+    for (auto i = s.begin(); i != s.end(); i++) {
+        count = 0;
+        for (auto j : oldVal) {
+            if (*(i+count) == j)
+                ++count;
+            else   
+                break;
+        }
+        if (count == oldVal.size()) {
+            i = s.erase(i, i+count);
+            i = s.insert(i, newVal.begin(), newVal.end());
+            i += (newVal.size() - 1);
+        }
+    }
+    return;
+}
+/*9.44*/
+void fix_string2(string &s, const string &oldVal, const string &newVal) {
+    int count = 0;
+    if (s.size() < oldVal.size())
+        return;
+    for (int i = 0; i < s.size(); ++i) {
+        count = 0;
+        for (auto j : oldVal) {
+            if (s[i+count] == j)
+                ++count;
+            else   
+                break;
+        }
+        if (count == oldVal.size()) {
+            s.replace(i, oldVal.size(), newVal);
+            i += (newVal.size() - 1);
+        }
+         
+    }
+    return;
+} 
+/*9.45*/
+string &add_string(string &s, const string &pre, const string &post) {
+    auto index = s.begin();
+    index = s.insert(index, pre.begin(), pre.end());
+    s.append(post);
+    return s;
+}
 
+/*9.46*/
+string &add_string2(string &s, const string &pre, const string &post) {
+    
+    s.insert(0, pre);
+    s.insert(s.size(), post);
+    return s;
+}
 
 int main() {
     /*9.4*/
@@ -201,6 +257,41 @@ int main() {
         cout << i << "\t";
     }
     cout << endl;
+
+    /*9.41*/
+    vector<char> cvec = {'a', 'b', 'c', 'd'};
+    string sss(cvec.data(), cvec.size());
+    
+    /*9.43*/
+    string str = "bbaaabbaabaaaaabb", str1 = "bb", str2 = "ccd";
+    fix_string(str, str1, str2);
+    cout << str << endl;
+    /*9.44*/
+    str = "bbaaabbaabaaaaabb";
+    fix_string2(str, str1, str2);
+    cout << str << endl;
+
+    /*9.45*/
+    string s3 = "Stella", s_pre = "Ms", s_post = "III";
+    s3 = add_string(s3, s_pre, s_post);
+    cout << s3 << endl;
+
+    /*9.46*/
+    s3 = "Stella";
+    s3 = add_string2(s3, s_pre, s_post);
+    cout << s3 << endl;
+
+    /*9.47*/
+    string s4 = "ab2c3d7R4E6";
+    string numbers = "01234567890";
+    string::size_type pos = 0;
+    while((pos != string::npos) && (pos != s4.size())) {
+        pos = s4.find_first_of(numbers, pos);
+        cout << pos << "\t";
+        ++pos;
+    }
+    cout << endl;
+    
 
 }
 
