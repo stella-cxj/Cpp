@@ -4,6 +4,8 @@
 #include <list>
 #include <deque>
 #include <forward_list>
+#include <fstream>
+#include <stack>
 
 using namespace std;
 /*9.4*/
@@ -118,6 +120,105 @@ string &add_string2(string &s, const string &pre, const string &post) {
     s.insert(0, pre);
     s.insert(s.size(), post);
     return s;
+}
+/*9.47*/
+void find_char(const string &s, const string &target) {
+    string::size_type pos = 0;
+    while(((pos = s.find_first_of(target, pos)) != string::npos) ) {
+        cout << s[pos] << " : " << pos << "\t";
+        ++pos;
+    }
+    cout << endl;
+}
+void find_n_char(const string &s, const string &target) {
+    string::size_type pos = 0;
+    while(((pos = s.find_first_not_of(target, pos)) != string::npos) ) {
+        cout << s[pos] << " : " << pos << "\t";
+        ++pos;
+    }
+    cout << endl;
+}
+/*9.51*/
+
+class Date {
+private:
+    unsigned year;
+    unsigned month;
+    unsigned day;
+
+public:
+    Date(const string &s) {
+        vector<string> Smonth = {"January", "Faburary", "March", "April", "May", 
+                                 "June", "July", "August", "September", 
+                                 "October", "November", "December", 
+                                 "Jan", "Feb", "Mar", "Apr", 
+                                 "May", "Jun", "Jul", "Aug", 
+                                 "Sep", "Oct", "Nov", "Dec"};
+        string numbers = "0123456789";     
+        string sday, smonth, syear;   
+        string::size_type pos = 0;
+        for (auto i = Smonth.begin(); i != Smonth.end(); ++i) {
+            if (s.find(*i) != string::npos) {
+                month = ((i - Smonth.begin()) % 12) + 1;
+                /*截取Day string*/
+                if ( (pos = s.find_first_of(numbers)) != string::npos ) {
+                    sday = s[pos++];
+                    if ( numbers.find(s[pos]) != string::npos ) {
+                        sday.append(1, s[pos++]);
+                    }
+                    day = stoi(sday);
+                    /*截取Year string*/
+                    pos = s.find_first_of(numbers, pos);
+                    string syear = s.substr(pos, 4);
+                    year = stoi(syear);
+                    cout << "year " << year << " month " << month << " day " << day << endl;
+                    return;
+                }
+                else {
+                    cout << "Input error. " << endl;
+                    return;
+                }
+            }
+        }
+         if ((pos = s.find("/")) != string::npos) {
+            sday = s.substr(0, pos);
+            day = stoi(sday);
+            pos++;
+            string::size_type pos_day = pos;
+            if ( (pos = s.find("/", pos)) != string::npos ){
+                smonth = s.substr(pos_day, pos - pos_day);
+                month = stoi(smonth);
+                pos++;
+                syear = s.substr(pos, 4);
+                year = stoi(syear);
+                cout << "year " << year << " month " << month << " day " << day << endl;
+                return;
+            } else {
+                cout << "Input error. " << endl;
+                return;
+            }
+        }
+        cout << "Failed to match." << endl;
+        return;
+    }
+};
+/*9.52*/
+
+void calc(stack<char> &stk, char c) {
+    string sa(1,c), sb;
+    int a = stoi(sa);
+    char cal = stk.top();
+    stk.pop();
+    sb = stk.top();
+    int b = stoi(sb);
+    stk.pop();
+    if (cal == '+') {
+        stk.push((char)((a+b)+48));
+    } else if (cal == '-') {
+        stk.push((char)((b-a)+48));
+
+    } else {}
+
 }
 
 int main() {
@@ -284,14 +385,65 @@ int main() {
     /*9.47*/
     string s4 = "ab2c3d7R4E6";
     string numbers = "01234567890";
-    string::size_type pos = 0;
-    while((pos != string::npos) && (pos != s4.size())) {
-        pos = s4.find_first_of(numbers, pos);
-        cout << pos << "\t";
-        ++pos;
+    string characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    find_char(s4, numbers);
+    find_char(s4, characters);
+    find_n_char(s4, characters);
+    find_n_char(s4, numbers);
+
+    /*9.49*/
+    fstream is("words");
+    string word, longest;
+    if (is) {
+        while(is >> word) {
+            if ((word.find_first_of("bdfghijklpqty") == string::npos) && (word.size() > longest.size())) {
+                longest = word;
+            }
+        }
+        cout << longest << endl;
     }
-    cout << endl;
-    
+    is.close();
+
+    /*9.50*/
+    vector<string> vecs = {"+6", "2.2", "33", "-55"};
+    //int sum = 0;
+    double sum = 0;
+    for (auto i : vecs) {
+        //sum += stoi(i);
+        sum += stod(i);
+    }
+    cout << sum << endl;
+
+    /*9.51*/
+    Date test1("January 21, 1900");
+    Date test2("Sep 30 1900");
+    Date test3("31/12/1990");
+
+    /*9.52*/
+    stack<char> stk;
+    string exp = "(2+(1+2)-1+(3-2)+1)";
+    for (auto i = 0; i < exp.size(); i++) {
+        if (exp[i] == '(') {
+            stk.push(exp[i]);
+        } else if ((exp[i] == '+') || (exp[i] == '-')) {
+            stk.push(exp[i]);
+        } else if (exp[i] == ')') {
+            char v = stk.top();
+            stk.pop();
+            stk.pop();
+            if ((!stk.empty()) && (stk.top() != '(')) {
+                calc(stk, v);
+            } else {
+                stk.push(v);
+            }
+        } else {
+            if (stk.empty() || stk.top() == '(')
+                stk.push(exp[i]);
+            else 
+                calc(stk, exp[i]);
+        }
+    }
+    cout << stk.top() << endl;
 
 }
-
+ 
