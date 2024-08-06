@@ -59,6 +59,18 @@ bool longer_than5(const string &s) {
     return (s.size() >= 5);
 }
 
+/*10.16*/    //biggies 求一个string vector中，大于等于一个给定长度的单词有多少并输出
+void biggies(vector<string> &svec, vector<string>::size_type s) {
+
+    elimDupl(svec);
+    stable_sort(svec.begin(), svec.end(), isShorter);
+
+    auto i = find_if(svec.begin(), svec.end(), [s](const string &a){return (a.size() > s);});
+    cout << "There are " << (svec.end() - i) << " words longer than " << s << " : " ;
+    for_each(i, svec.end(), [](const string &s){cout << s << "  ";});
+    cout << endl;
+}
+
 int main() {
     
     /*10.1*/
@@ -121,5 +133,19 @@ int main() {
         cout << *i << "\t";
     }
     cout << endl;
+
+    /*10.14*/
+    auto f = [](int a, int b) -> int {return (a+b);};
+    cout << f(1,2) << endl;
+    
+    /*10.15*/
+    int b = 5;
+    auto f15 = [b](int a) -> int {return (b+a);};
+    cout << f15(5) << endl;
+
+    /*10.16*/
+    vector<string> svec16 = {"fox", "jump", "over", "fox", "red", "the", "red", "fox", "the"};
+    biggies(svec16, 3);
     return 0;
-}   
+}
+
