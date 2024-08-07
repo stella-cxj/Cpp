@@ -333,6 +333,30 @@ int main() {
         }
     }
 
+    /*10.34*/
+    vector<int> ivec34 = {1,2,3,4,5};
+    ostream_iterator<int> o_iter34(cout, " ");
+    copy(ivec34.rbegin(), ivec34.rend(), o_iter34);    
+    cout << endl;
+
+    /*10.35*/
+    for (auto i = ivec34.end(); i != ivec34.begin(); --i) {
+        cout << *(i-1) << " ";
+    }
+    cout << endl;
+    
+    /*10.36*/
+    list<int> ilist36 = {2,236,64,2,0,8,0,9,0,3,2};
+    auto r0 = find(ilist36.rbegin(), ilist36.rend(), 0);
+    cout << distance(ilist36.rbegin(), r0) << endl;
+
+    /*10.37*/
+    vector<int> ivec37 = {1,2,3,4,5,6,7,8,9,10};
+    list<int> ilist37;
+    copy((ivec37.rbegin() + 3), (ivec37.rbegin() + 8), back_inserter(ilist37));
+    for (auto i : ilist37) {cout << i << " ";} 
+    cout << endl;
+
     return 0;
 }
 
