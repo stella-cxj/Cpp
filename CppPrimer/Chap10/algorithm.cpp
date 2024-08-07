@@ -5,6 +5,9 @@
 #include <string>
 #include <numeric>
 #include <functional>
+#include <fstream>
+#include <iterator>
+#include "Sales_item.h"
 
 using namespace std;
 using namespace std::placeholders;
@@ -45,7 +48,7 @@ private:
     double revenue = 0.0;
 };
 
-bool compareIsbn(const Sales_data &obj1, const Sales_data &obj2) {
+bool compareIsbn12(const Sales_data &obj1, const Sales_data &obj2) {
     return (obj1.isbn() < obj2.isbn());
 }
 
@@ -171,7 +174,7 @@ int main() {
                                Sales_data("162343-51"),
                                Sales_data("92343-51")};
     print(Svec);
-    sort(Svec.begin(), Svec.end(), compareIsbn);
+    sort(Svec.begin(), Svec.end(), compareIsbn12);
     print(Svec);
 
     /*10.13*/
@@ -248,6 +251,87 @@ int main() {
     vector<string> svec25 = {"fox", "jump", "over", "fox", "red", "the", "red", "fox", "the"};
     biggies4(svec25, 3);
 
+    /*10.27*/
+    vector<int> ivec27 = {1,1,2,3,3,7,7,7,7,2,45,4,4};
+    list<int> ilist27;
+    sort(ivec27.begin(), ivec27.end());
+    unique_copy(ivec27.begin(), ivec27.end(), inserter(ilist27, ilist27.begin()));
+    for_each(ilist27.begin(), ilist27.end(), [](const int &i){cout << i << "\t";});
+    cout << endl;
+
+    /*10.28*/
+    vector<int> ivec28 = {1,2,3,4,5,6,7,8,9};
+    vector<int> ivec_b, ivec_i;
+    list<int> ilist28_f;
+    copy(ivec28.begin(), ivec28.end(), inserter(ivec_i, ivec_i.begin()));
+    for_each(ivec_i.begin(), ivec_i.end(), [](const int &i){cout << i << "\t";});
+    cout << endl;
+    copy(ivec28.begin(), ivec28.end(), back_inserter(ivec_b));
+    for_each(ivec_b.begin(), ivec_b.end(), [](const int &i){cout << i << "\t";});
+    cout << endl;
+    copy(ivec28.begin(), ivec28.end(), front_inserter(ilist28_f));
+    for_each(ilist28_f.begin(), ilist28_f.end(), [](const int &i){cout << i << "\t";});
+    cout << endl;
+
+    /*10.29*/
+    fstream in("words");
+    istream_iterator<string> i_iter(in), eof;
+    vector<string> svec29(i_iter, eof);
+    for_each(svec29.begin(), svec29.end(), [](const string &i){cout << i << " ";});
+    cout << endl;
+    in.close();
+
+    /*10.30*/
+    cout << "Please input some integers:" << endl;
+    istream_iterator<int> i_iter30(cin), eof30;
+    vector<int> ivec30(i_iter30, eof30);
+    sort(ivec30.begin(), ivec30.end());
+    ostream_iterator<int> o_iter30(cout, " ");
+    copy(ivec30.begin(), ivec30.end(), o_iter30);
+    cout << endl;
+    cin.clear();
+
+    /*10.31*/
+    cout << "Please input some integers:" << endl;
+    istream_iterator<int> i_iter31(cin), eof31;
+    vector<int> ivec31(i_iter31, eof31);
+    sort(ivec31.begin(), ivec31.end());
+    ostream_iterator<int> o_iter31(cout, " ");
+    unique_copy(ivec31.begin(), ivec31.end(), o_iter31);
+    cout << endl;
+    cin.clear();
+    
+    /*10.32*/
+    vector<Sales_item> vs;
+    cout << "Please input some Sales_items:" << endl;
+    istream_iterator<Sales_item> in_iter(cin), eof32;
+    while(in_iter != eof32) {
+        vs.push_back(*in_iter++);
+    }
+    sort(vs.begin(), vs.end(), compareIsbn);
+    auto l = vs.begin();
+    while (l != vs.end()) {
+        auto item = *l;
+        auto r = find_if(l+1, vs.end(),
+                        [item](const Sales_item &item1){return (item1.isbn() != item.isbn());}
+                        );
+        cout << accumulate(l+1, r, item) << endl;
+        l = r;
+    }
+    
+    /*10.33*/
+    fstream in33("int");
+    ofstream out1("out1"), out2("out2");
+    istream_iterator<int> i_iter33(in33), eof33;
+    vector<int> ivec33(i_iter33, eof33);
+    ostream_iterator<int> o_iter1(out1, " "), o_iter2(out2, "\n");
+    for (auto i : ivec33) {
+        if ((i % 2) == 0) {
+            *o_iter2++ = i;
+        } else {
+            *o_iter1++ = i;
+        }
+    }
 
     return 0;
 }
