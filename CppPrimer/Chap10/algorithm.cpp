@@ -357,6 +357,12 @@ int main() {
     for (auto i : ilist37) {cout << i << " ";} 
     cout << endl;
 
+    /*10.42*/
+    list<string> slist42 = {"fox", "jump", "over", "fox", "red", "the", "red", "fox", "the"};
+    slist42.sort();
+    slist42.unique();
+    for (auto i : slist42) {cout << i << " ";} cout << endl;
+
     return 0;
 }
 
