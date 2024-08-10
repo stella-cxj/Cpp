@@ -43,6 +43,12 @@ bool compareIsbn(const Sales_data &lhs, const Sales_data &rhs) {
 typedef bool (*pf)(const Sales_data &, const Sales_data &);
 multiset<Sales_data, pf> bookstore(compareIsbn);
 
+/*11.31*/
+void print(const multimap<string, string> &m) {
+    for (auto i : m)
+        cout << i.first << " " << i.second << endl;
+}
+
 int main() {
 
     /*11.3*/     /*11.4*/
@@ -154,5 +160,78 @@ int main() {
     multiset<Sales_data, pf> bookstore(compareIsbn);
     multiset<Sales_data, pf>::iterator iter = bookstore.begin();   
 
+    /*11.20*/
+    map<string, size_t> words20;
+    string word20;
+    cout << "Please input some words:" << endl;
+    while(cin >> word20) {
+        trans(word20);
+        //++words[word];
+        auto ret = words20.insert({word20, 1});
+        if (!ret.second) {
+            ++ret.first->second;
+        }
+    }
+    for (auto i : words20) {
+        cout << i.first << " occurs " << i.second << " times."  << endl;
+    }
+    cin.clear();
+
+    /*11.22*/
+    map<string, vector<int>> map22;
+    pair<map<string, vector<int>>::iterator ,bool> ret = map22.insert({"abc", {1,2,3}});
+
+    /*11.23*/
+    multimap<string, vector<string>> names23;
+    string name23, kid23;
+    cout << "Please enter a new family name: " << endl;
+    while (cin >> name23) {
+        auto ret = names23.insert({name23, {}});
+        cout << "Please enter names to the family " << name << endl;
+        while(cin >> kid23) {
+            ret->second.push_back(kid23);
+        }
+        cin.clear();
+        cout << "Please enter next family name: " << endl;
+    }
+    cin.clear();
+    for (auto j : names23) {
+        cout << "Family " << j.first << " has kids: " << endl;
+        for (auto i : j.second) {
+            cout << i << endl;
+        }
+    }
+   
+    /*11.28*/   
+    map<string, vector<int>> map28;
+    map<string, vector<int>>::iterator iter28 = map28.find("s");
+    
+    /*11.31*/
+    multimap<string, string> author;
+    author.insert({"JinYong", "ShenDiaoXiaLv"});
+    author.insert({"JinYong", "TianLongBaBu"});
+    author.insert({"GuLong", "XiaoLiFeiDao"});
+    author.insert({"GuLong", "HarryPotter"});
+    print(author);
+    auto book = author.begin();
+    while (book != author.end()) {
+        book = author.find("JinYong");
+        book = author.erase(book);
+    }
+    print(author);
+
+    /*11.32*/
+    author.insert({"JinYong", "ShenDiaoXiaLv"});
+    author.insert({"JinYong", "TianLongBaBu"});
+    print(author);
+
+    ifstream in_file("input"), rule_file("rule");
+    word_transform(in_file, rule_file);
+
     return 0;
 }
+
+void word_transform(ifstream &in, ifstream &rule) {
+
+}
+
