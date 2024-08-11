@@ -8,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <unordered_map>
 
 using namespace std;
 /*11.4*/
@@ -47,6 +48,68 @@ multiset<Sales_data, pf> bookstore(compareIsbn);
 void print(const multimap<string, string> &m) {
     for (auto i : m)
         cout << i.first << " " << i.second << endl;
+}
+
+/*11.33*/
+
+map<string, string> buildMap(ifstream &rule ) {
+    map<string, string> trans_map;
+    string line;
+    string key, value;
+    while(rule >> key) {
+        getline(rule, line);
+        value = line.substr(1);
+        trans_map[key] = value;
+    }
+    return trans_map;
+}
+
+const string & transform(const string &s, const map<string, string> &trans_map) {
+    auto s_iter = trans_map.find(s);
+    if (s_iter != trans_map.end()) {
+        return s_iter->second;
+    } else {
+        return s;
+    }
+}
+void word_transform(ifstream &in, ifstream &rule) {
+
+    auto trans_map = buildMap(rule);
+    string text;
+    while(getline(in, text)) {
+        istringstream stream(text);
+        string word;
+        bool firstword = true;
+        while (stream >> word) {
+            if (firstword) {
+                firstword = false;
+            } else {
+                cout << " ";
+            }
+            cout << transform(word, trans_map);
+        }
+        cout << endl;
+    }
+}
+/*11.38*/
+unordered_map<string, string> buildMap_unordered(ifstream &rule ) {
+    unordered_map<string, string> trans_map;
+    string line;
+    string key, value;
+    while(rule >> key) {
+        getline(rule, line);
+        value = line.substr(1);
+        trans_map[key] = value;
+    }
+    return trans_map;
+}
+const string & transform(const string &s, const unordered_map<string, string> &trans_map) {
+    auto s_iter = trans_map.find(s);
+    if (s_iter != trans_map.end()) {
+        return s_iter->second;
+    } else {
+        return s;
+    }
 }
 
 int main() {
@@ -225,13 +288,41 @@ int main() {
     author.insert({"JinYong", "TianLongBaBu"});
     print(author);
 
+    /*11.33*/
     ifstream in_file("input"), rule_file("rule");
     word_transform(in_file, rule_file);
+
+    /*11.38*/ 
+    unordered_map<string, size_t> words38;
+    string word38;
+    cout << "Please input some words:" << endl;
+    while(cin >> word38) {
+        ++words38[word38];
+    }
+    for (auto i : words38) {
+        cout << i.first << " occurs " << i.second << " times."  << endl;
+    }
+    cin.clear();
+
+    ifstream in_file38("input"), rule_file38("rule");
+    auto trans_map = buildMap_unordered(rule_file38);
+    string text;
+    while(getline(in_file38, text)) {
+        istringstream stream(text);
+        string word;
+        bool firstword = true;
+        while (stream >> word) {
+            if (firstword) {
+                firstword = false;
+            } else {
+                cout << " ";
+            }
+            cout << transform(word, trans_map);
+        }
+        cout << endl;
+    }
 
     return 0;
 }
 
-void word_transform(ifstream &in, ifstream &rule) {
-
-}
 
