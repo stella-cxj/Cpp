@@ -3,6 +3,10 @@
 #include <vector>
 #include <memory>
 #include <fstream>
+#include <sstream>
+#include <cstring>
+#include <map>
+#include <set>
 
 using namespace std;
 /*12.2*/
@@ -134,6 +138,70 @@ void f1(destination &d) {
     shared_ptr<connection> p(&c, [](connection *p){disconnect(*p);});
 }
 
+/*12.27*/
+void trans(string &s) {
+
+    for (auto i = s.begin(); i != s.end();) {
+        *i = tolower(*i);
+        if (ispunct(*i)) {
+            i = s.erase(i);
+        } else {
+            ++i;
+        }
+    }
+}
+
+class QueryResult {
+public:
+    QueryResult() = default;
+    QueryResult(shared_ptr<vector<string>> txt, shared_ptr<set<int>> lineno, const string &str) : text(txt), line_no(lineno), s(str) {}
+    ostream & print(ostream & os) const {
+        os << this->s << " occurs " << this->line_no->size() << " times." << endl;
+        for (auto i = this->line_no->begin(); i != this->line_no->end(); i++) {
+            os << "\t" << "(line " << *i << ") " << (*(this->text))[*i - 1] << endl;
+        }
+        return os;
+    }
+private:
+    int total_time = 0;
+    string s;
+    shared_ptr<vector<string>> text;
+    shared_ptr<set<int>> line_no;
+};
+
+class TextQuery {
+public:
+    TextQuery() = default;
+    TextQuery(ifstream &);
+    QueryResult query(const string &);
+private:
+    shared_ptr<vector<string>> text;
+    map<string, set<int>> word_line;
+};
+
+TextQuery::TextQuery (ifstream &in) {
+    
+    this->text = make_shared<vector<string>>();
+
+    string line;
+    int line_no = 0;
+    while(getline(in, line)) {
+        line_no++;
+        this->text->push_back(line);
+        istringstream stream(line);
+        string word;        
+        while (stream >> word) {
+            trans(word);
+            this->word_line[word].insert(line_no);
+        }
+    }
+}
+
+QueryResult TextQuery::query(const string &s) {
+    auto pset = make_shared<set<int>>(this->word_line[s]);
+    QueryResult qr(this->text, pset, s);
+    return qr;
+}
 
 int main() {
     
@@ -167,6 +235,73 @@ int main() {
         pcwords.incr();
     }
     cout << endl;
+
+    /*12.23*/
+    const char* p1 = "Hello ";
+    const char* p2 = "world!";
+    char* p = new char[strlen(p1) + strlen(p2) + 1];
+    strcpy(p, p1);
+    strcat(p, p2);
+    cout << p << endl;
+    delete [] p;
+
+    string s1 = "Hello ", s2 = "world!";
+    string s = s1 + s2;
+    cout << s << endl;
+
+    /*12.24*/
+    cout << "Please enter a string " << endl;
+    string str;
+    if (cin >> str) {
+        char *ps = new char [str.size()];
+        strcpy(ps, str.c_str());
+        cout << ps << endl;
+        delete [] ps;
+    }
+    cin.clear();
+
+    /*12.26*/
+    allocator<string> alloc;
+    size_t size = 0, max_size = 100;
+    string s26;
+    string *const p26 = alloc.allocate(max_size);
+    auto q26 = p26;
+    cout << "Please enter some strings: " << endl;
+    while((cin >> s26) && (q26 != p26 + max_size)) {
+        alloc.construct(q26++, s26);
+    }
+    for (auto i = p26; i != q26; i++) {
+        cout << *i << " ";
+    }
+    while(q26 != p26) {
+        alloc.destroy(q26--);
+    }
+    alloc.deallocate(p26, max_size);
+    cin.clear();
+
+    /*12.27*/
+    ifstream infile("words");
+    TextQuery tq(infile);
+    while(true) {
+        cout << "enter word to look for, or q to quit: ";
+        string s;
+        if (!(cin >> s) || s == "q") break;
+        const QueryResult& qr = tq.query(s);
+        qr.print(cout) << endl;
+    }
+    infile.close();
+    cin.clear();
+    
+    /*12.28*/
+    ifstream infile28("words");
+    while(true) {
+        cout << "enter word to look for, or q to quit: ";
+        string s;
+        if (!(cin >> s) || s == "q") break;
+        /*TBD*/   
+    }
+    infile28.close();
+    cin.clear();
 
     return 0;
 }
