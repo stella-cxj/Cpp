@@ -162,6 +162,7 @@ public:
         }
         return os;
     }
+    ~QueryResult() {}
 private:
     int total_time = 0;
     string s;
@@ -174,6 +175,7 @@ public:
     TextQuery() = default;
     TextQuery(ifstream &);
     QueryResult query(const string &);
+    ~TextQuery() {}
 private:
     shared_ptr<vector<string>> text;
     map<string, set<int>> word_line;
@@ -202,6 +204,33 @@ QueryResult TextQuery::query(const string &s) {
     QueryResult qr(this->text, pset, s);
     return qr;
 }
+/*12.28*/
+void query(string word, vector<string> &txt, map<string, set<int>> &smap) {
+
+    auto sset = smap[word];
+    cout << word << " occurs " << sset.size() << " times." << endl;
+    for (auto i = sset.begin(); i != sset.end(); ++i) {
+        cout << "\t" << "(line " << *i << ") " << txt[*i - 1] << endl;       
+    }
+
+}
+
+void make_map(ifstream &in, vector<string> &txt, map<string, set<int>> &smap) {
+
+    string line;
+    int line_no = 0;
+    while(getline(in, line)) {
+        line_no++;
+        txt.push_back(line);
+        istringstream stream(line);
+        string word;        
+        while (stream >> word) {
+            trans(word);
+            smap[word].insert(line_no);
+        }
+    }
+}
+
 
 int main() {
     
@@ -283,7 +312,7 @@ int main() {
     ifstream infile("words");
     TextQuery tq(infile);
     while(true) {
-        cout << "enter word to look for, or q to quit: ";
+        cout << "1. enter word to look for, or q to quit: ";
         string s;
         if (!(cin >> s) || s == "q") break;
         const QueryResult& qr = tq.query(s);
@@ -294,13 +323,26 @@ int main() {
     
     /*12.28*/
     ifstream infile28("words");
+    vector<string> text;
+    map<string, set<int>> word_line;
+    make_map(infile28, text, word_line);
+
     while(true) {
-        cout << "enter word to look for, or q to quit: ";
+        cout << "2. enter word to look for, or q to quit: ";
         string s;
         if (!(cin >> s) || s == "q") break;
-        /*TBD*/   
+        query(s, text, word_line);
     }
     infile28.close();
+    cin.clear();
+    
+    /*12.29*/
+    do {
+        cout << "3. enter word to look for, or q to quit: ";
+        string s;
+        if (!(cin >> s) || s == "q") break;
+        query(s, text, word_line);
+    } while(true);
     cin.clear();
 
     return 0;
