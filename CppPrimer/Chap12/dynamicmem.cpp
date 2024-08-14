@@ -162,6 +162,9 @@ public:
         }
         return os;
     }
+    set<int>::iterator begin() {return line_no->begin();}
+    set<int>::iterator end() {return line_no->end();}
+    shared_ptr<vector<string>> get_file() {return text;}
     ~QueryResult() {}
 private:
     int total_time = 0;
@@ -229,6 +232,62 @@ void make_map(ifstream &in, vector<string> &txt, map<string, set<int>> &smap) {
             smap[word].insert(line_no);
         }
     }
+}
+/*12.32*/
+class QueryResult1 {
+public:
+    QueryResult1() = default;
+    QueryResult1(shared_ptr<StrBlob> txt, shared_ptr<set<int>> lineno, const string &str) : text(txt), line_no(lineno), s(str) {}
+    ostream & print(ostream & os) const {
+        os << this->s << " occurs " << this->line_no->size() << " times." << endl;
+        for (auto i = this->line_no->begin(); i != this->line_no->end(); i++) {
+            StrBlobPtr ptext(this->text->begin());
+            for (auto j = 0; j != (*i - 1); ++j) {ptext.incr();}
+            os << "\t" << "(line " << *i << ") " << ptext.deref() << endl;
+        }
+        return os;
+    }
+    ~QueryResult1() {}
+private:
+    int total_time = 0;
+    string s;
+    shared_ptr<StrBlob> text;
+    shared_ptr<set<int>> line_no;
+};
+
+class TextQuery1 {
+public:
+    TextQuery1() = default;
+    TextQuery1(ifstream &);
+    QueryResult1 query(const string &);
+    ~TextQuery1() {}
+private:
+    shared_ptr<StrBlob> text;
+    map<string, set<int>> word_line;
+};
+
+TextQuery1::TextQuery1 (ifstream &in) {
+    
+    this->text = make_shared<StrBlob>();
+
+    string line;
+    int line_no = 0;
+    while(getline(in, line)) {
+        line_no++;
+        this->text->push_back(line);
+        istringstream stream(line);
+        string word;        
+        while (stream >> word) {
+            trans(word);
+            this->word_line[word].insert(line_no);
+        }
+    }
+}
+
+QueryResult1 TextQuery1::query(const string &s) {
+    auto pset = make_shared<set<int>>(this->word_line[s]);
+    QueryResult1 qr(this->text, pset, s);
+    return qr;
 }
 
 
@@ -343,6 +402,19 @@ int main() {
         if (!(cin >> s) || s == "q") break;
         query(s, text, word_line);
     } while(true);
+    cin.clear();
+
+    /*12.32*/
+    ifstream infile32("words");
+    TextQuery1 tq1(infile32);
+    while(true) {
+        cout << "4. enter word to look for, or q to quit: ";
+        string s;
+        if (!(cin >> s) || s == "q") break;
+        const QueryResult1& qr1 = tq1.query(s);
+        qr1.print(cout) << endl;
+    }
+    infile32.close();
     cin.clear();
 
     return 0;
