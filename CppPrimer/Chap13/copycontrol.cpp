@@ -3,6 +3,7 @@
 #include <vector>
 #include <memory>
 #include <algorithm>
+#include <set>
 
 using namespace std;
 
@@ -271,6 +272,101 @@ private:
     TreeNode *root;
 };
 
+/*13.34*/
+class Folder;
+class Message{
+friend class Folder;
+friend void swap(Message &, Message &);
+public:
+    explicit Message(const string &s = ""): contents(s) {}
+    Message(const Message&);
+    Message& operator=(const Message&);
+    ~Message();
+    void save(Folder&);
+    void remove(Folder&);
+private:
+    string contents;
+    set<Folder*> folders;
+    void add_to_Folders(const Message&);
+    void remove_from_Folders();
+    void addFldr(Folder *f) {folders.insert(f);}
+    void remFldr(Folder *f) {folders.erase(f);}
+};
+Message::Message(const Message& m): contents(m.contents), folders(m.folders) {
+    add_to_Folders(m);
+}
+Message& Message::operator=(const Message &m) {
+    remove_from_Folders();
+    contents = m.contents;
+    folders = m.folders;
+    add_to_Folders(m);
+    return *this;
+}
+Message::~Message() {
+    remove_from_Folders();
+}
+
+class Folder{
+friend class Message;
+friend void swap(Message &, Message &);
+public:
+    Folder() {}
+    Folder(const Folder& f): messages(f.messages) {
+        add_to_Messages(f);
+    }
+    Folder& operator=(const Folder& f) {
+        remove_from_Msgs();
+        messages = f.messages;
+        add_to_Messages(f);
+        return *this;
+    }
+    ~Folder() {
+        remove_from_Msgs();
+    }
+
+private:
+    set<Message*> messages;
+    void addMsg(Message *m){messages.insert(m);}
+    void remMsg(Message *m){messages.erase(m);}
+    void add_to_Messages(const Folder &f) {
+        for (auto msg : f.messages) {
+            msg->addFldr(this);
+        }
+    }
+    void remove_from_Msgs() {
+        while (!messages.empty()) {
+            (*messages.begin())->remove(*this);
+        }
+    }
+};
+
+void Message::save(Folder& f) {
+    folders.insert(&f);
+    f.addMsg(this);
+}
+void Message::remove(Folder& f) {
+    folders.erase(&f);
+    f.remMsg(this);
+}
+void Message::add_to_Folders(const Message &m) {
+    for (auto f : m.folders) {
+        f->addMsg(this);
+    }
+}
+void Message::remove_from_Folders() {
+    for (auto f : folders) {
+        f->remMsg(this);
+    }
+}
+void swap(Message &lhs, Message &rhs) {
+    using std::swap;
+    for (auto f : lhs.folders) {f->remMsg(&lhs);}
+    for (auto f : rhs.folders) {f->remMsg(&rhs);}
+    swap(lhs.folders, rhs.folders);
+    swap(lhs.contents, rhs.contents);
+    for (auto f : lhs.folders) {f->addMsg(&lhs);}
+    for (auto f : rhs.folders) {f->addMsg(&rhs);}
+}
 
 int main() {
     /*13.13*/
@@ -338,6 +434,8 @@ int main() {
     hvec.push_back(hh3);
     sort(hvec.begin(), hvec.end());
     for (auto i : hvec) {cout << *i << endl;}
+
+
     return 0;
 }
 
