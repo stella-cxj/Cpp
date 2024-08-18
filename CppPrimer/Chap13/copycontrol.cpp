@@ -7,6 +7,7 @@
 #include <map>
 #include <fstream>
 #include <sstream>
+#include <cstring>
 
 using namespace std;
 
@@ -549,6 +550,44 @@ QueryResult TextQuery::query(const string &s) {
     return qr;
 }
 
+/*13.44*/
+class String{
+public:
+    String() = default;
+    String(const char *cp) : 
+	          sz(std::strlen(cp)), p(a.allocate(sz))
+	          { std::uninitialized_copy(cp, cp + sz, p); }
+	String(const String &s):sz(s.sz), p(a.allocate(s.sz))
+	          { std::uninitialized_copy(s.p, s.p + sz , p); }
+    String &operator=(const String &);              
+    String &operator=(const char*);
+   	~String() noexcept { if (p) a.deallocate(p, sz); }
+	const char *begin() { return p; }
+	const char *begin() const { return p; }
+	const char *end() { return p + sz; }
+	const char *end() const { return p + sz; }
+	size_t size() const { return sz; }
+private:
+    static allocator<char> a;
+    char *p = nullptr;
+    size_t sz = 0;
+};
+allocator<char> String::a;
+String & String::operator=(const String &rhs) {
+    auto newp = a.allocate(rhs.sz); 
+	uninitialized_copy(rhs.p, rhs.p + rhs.sz, newp);
+	if (p)
+		a.deallocate(p, sz); 
+	p = newp;    
+	sz = rhs.sz; 
+    return *this;     
+}
+String& String::operator=(const char *cp) {
+	if (p) a.deallocate(p, sz);
+	p = a.allocate(sz = strlen(cp));
+	uninitialized_copy(cp, cp + sz, p);
+	return *this;
+}
 
 int main() {
     /*13.13*/
