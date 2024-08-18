@@ -4,6 +4,9 @@
 #include <memory>
 #include <algorithm>
 #include <set>
+#include <map>
+#include <fstream>
+#include <sstream>
 
 using namespace std;
 
@@ -367,6 +370,185 @@ void swap(Message &lhs, Message &rhs) {
     for (auto f : lhs.folders) {f->addMsg(&lhs);}
     for (auto f : rhs.folders) {f->addMsg(&rhs);}
 }
+/*13.39*/
+class StrVec {
+public:
+    StrVec(): elements(nullptr), first_free(nullptr), cap(nullptr) {}
+    StrVec(initializer_list<string>);
+    StrVec(const StrVec&);
+    StrVec &operator=(const StrVec&);
+    ~StrVec();
+    void push_back(const string&);
+    size_t size() const {return first_free - elements;}
+    size_t capacity() const {return cap - elements;}
+    string *begin() const {return elements;}
+    string *end() const {return first_free;}
+    void reserve(size_t n) {if (n > capacity()) reallocate(n);}
+    inline void resize(size_t);
+    inline void resize(size_t, const string &);
+    
+private:
+    static allocator<string> alloc;
+    void chk_n_alloc() { if (size() == capacity()) reallocate();}
+    pair<string*, string*> alloc_n_copy(const string*, const string*);
+    void free();
+    inline void reallocate();
+    inline void reallocate(size_t);
+    string *elements;
+    string *first_free;
+    string *cap;
+};
+allocator<string> StrVec::alloc;
+void StrVec::push_back(const string& s) {
+    chk_n_alloc();
+    alloc.construct(first_free++, s);
+}
+pair<string*, string*> StrVec::alloc_n_copy(const string *b, const string *e) {
+    auto data = alloc.allocate(e - b);
+    return {data, uninitialized_copy(b, e, data)};
+
+}
+void StrVec::free() {
+    if (elements) {
+        for_each(elements, first_free, 
+                [](string &s){alloc.destroy(&s);});
+        alloc.deallocate(elements, cap - elements);
+    }
+}
+StrVec::StrVec(initializer_list<string> il) {
+    auto newdata = alloc_n_copy(il.begin(), il.end());
+    elements = newdata.first;
+    first_free = cap = newdata.second;
+}
+StrVec::StrVec(const StrVec &s) {
+    auto newdata = alloc_n_copy(s.begin(), s.end());
+    elements = newdata.first;
+    first_free = cap = newdata.second;
+}
+StrVec::~StrVec() {
+    free();
+}
+StrVec& StrVec::operator=(const StrVec &rhs) {
+    auto data = alloc_n_copy(rhs.begin(), rhs.end());
+    free();
+    elements = data.first;
+    first_free = cap = data.second;
+    return *this;
+}
+void StrVec::reallocate(){
+    auto newcapacity = size() ? 2 * size() : 1;
+    auto newdata = alloc.allocate(newcapacity);
+    auto dest = newdata;
+    auto elem = elements;
+    for (size_t i = 0; i != size(); ++i) {
+        alloc.construct(dest++, std::move(*elem++));
+    }
+    free();
+    elements = newdata;
+    first_free = dest;
+    cap = elements + newcapacity;
+}
+void StrVec::reallocate(size_t newcapacity){
+    auto newdata = alloc.allocate(newcapacity);
+    auto dest = newdata;
+    auto elem = elements;
+    for (size_t i = 0; i != size(); ++i) {
+        alloc.construct(dest++, std::move(*elem++));
+    }
+    free();
+    elements = newdata;
+    first_free = dest;
+    cap = elements + newcapacity;
+}
+inline void StrVec::resize(size_t n) {
+    if (n > size()) {
+        while(size() < n) {
+            push_back("");
+        }
+    } else if(n < size()) {
+        while(size() > n) {
+            alloc.destroy(--first_free);
+        }
+    }
+}
+inline void StrVec::resize(size_t n, const string &s) {
+    if (n > size()) {
+        while(size() < n) {
+            push_back(s);
+        }
+    }
+}
+
+/*13.42*/
+void trans(string &s) {
+
+    for (auto i = s.begin(); i != s.end();) {
+        *i = tolower(*i);
+        if (ispunct(*i)) {
+            i = s.erase(i);
+        } else {
+            ++i;
+        }
+    }
+}
+    
+class QueryResult {
+public:
+    QueryResult() = default;
+    QueryResult(shared_ptr<StrVec> txt, shared_ptr<set<int>> lineno, const string &str) : text(txt), line_no(lineno), s(str) {}
+    ostream & print(ostream & os) const {
+        os << this->s << " occurs " << this->line_no->size() << " times." << endl;
+        for (auto i = this->line_no->begin(); i != this->line_no->end(); i++) {
+            os << "\t" << "(line " << *i << ") " << *(this->text->begin() + (*i-1)) << endl;
+        }
+        return os;
+    }
+    set<int>::iterator begin() {return line_no->begin();}
+    set<int>::iterator end() {return line_no->end();}
+    shared_ptr<StrVec> get_file() {return text;}
+    ~QueryResult() {}
+private:
+    int total_time = 0;
+    string s;
+    shared_ptr<StrVec> text;
+    shared_ptr<set<int>> line_no;
+};
+
+class TextQuery {
+public:
+    TextQuery() = default;
+    TextQuery(ifstream &);
+    QueryResult query(const string &);
+    ~TextQuery() {}
+private:
+    shared_ptr<StrVec> text;
+    map<string, set<int>> word_line;
+};
+
+TextQuery::TextQuery (ifstream &in) {
+    
+    this->text = make_shared<StrVec>();
+
+    string line;
+    int line_no = 0;
+    while(getline(in, line)) {
+        line_no++;
+        this->text->push_back(line);
+        istringstream stream(line);
+        string word;        
+        while (stream >> word) {
+            trans(word);
+            this->word_line[word].insert(line_no);
+        }
+    }
+}
+
+QueryResult TextQuery::query(const string &s) {
+    auto pset = make_shared<set<int>>(this->word_line[s]);
+    QueryResult qr(this->text, pset, s);
+    return qr;
+}
+
 
 int main() {
     /*13.13*/
@@ -434,6 +616,19 @@ int main() {
     hvec.push_back(hh3);
     sort(hvec.begin(), hvec.end());
     for (auto i : hvec) {cout << *i << endl;}
+
+    /*13.42*/
+    ifstream infile("words");
+    TextQuery tq(infile);
+    while(true) {
+        cout << "1. enter word to look for, or q to quit: ";
+        string s;
+        if (!(cin >> s) || s == "q") break;
+        const QueryResult& qr = tq.query(s);
+        qr.print(cout) << endl;
+    }
+    infile.close();
+    cin.clear();
 
 
     return 0;
