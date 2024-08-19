@@ -552,14 +552,21 @@ QueryResult TextQuery::query(const string &s) {
 
 /*13.44*/
 class String{
+friend ostream &operator<<(ostream&, const String&);
 public:
     String() = default;
     String(const char *cp) : 
 	          sz(std::strlen(cp)), p(a.allocate(sz))
 	          { std::uninitialized_copy(cp, cp + sz, p); }
+
 	String(const String &s):sz(s.sz), p(a.allocate(s.sz))
 	          { cout << "String copy constructor" << endl;
                 std::uninitialized_copy(s.p, s.p + sz , p); }
+
+	String(String &&s) noexcept : sz(s.size()), p(s.p) 
+	          { cout << "String move constructor" << endl;
+              s.p = 0; s.sz = 0; }
+
     String &operator=(const String &);              
     String &operator=(const char*);
    	~String() noexcept { if (p) a.deallocate(p, sz); }
@@ -570,8 +577,8 @@ public:
 	size_t size() const { return sz; }
 private:
     static allocator<char> a;
-    char *p = nullptr;
     size_t sz = 0;
+    char *p = nullptr;
 };
 allocator<char> String::a;
 String & String::operator=(const String &rhs) {
@@ -589,6 +596,12 @@ String& String::operator=(const char *cp) {
 	p = a.allocate(sz = strlen(cp));
 	uninitialized_copy(cp, cp + sz, p);
 	return *this;
+}
+ostream &operator<<(ostream &os, const String &s){
+	auto p = s.begin();
+	while (p != s.end())
+		os << *p++ ;
+	return os;
 }
 
 int main() {
@@ -674,6 +687,29 @@ int main() {
     /*13.47*/
     String s1("One"), s2("Two");
     cout << s1 << " " << s2 << endl;
+    String s3(s2);
+    cout << s1 << " " << s2 << " " << s3 << endl;
+    s3 = s1;
+    cout << s1 << " " << s2 << " " << s3 << endl;
+    s3 = String("Three");
+    cout << s1 << " " << s2 << " " << s3 << endl;
+
+    vector<String> vs;
+    vs.push_back(s1);
+    for_each(vs.begin(), vs.end(), [](const String &s){cout << s << " ";});
+    cout << endl;
+
+    vs.push_back(std::move(s2));
+    for_each(vs.begin(), vs.end(), [](const String &s){cout << s << " ";});
+    cout << endl;
+
+    vs.push_back(String("Three"));
+    for_each(vs.begin(), vs.end(), [](const String &s){cout << s << " ";});
+    cout << endl;
+    
+    vs.push_back("Four");
+    for_each(vs.begin(), vs.end(), [](const String &s){cout << s << " ";});
+    cout << endl;
 
     return 0;
 }
