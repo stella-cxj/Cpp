@@ -57,7 +57,7 @@ inline void swap(HasPtr &lhs, HasPtr &rhs) {
 struct X {
     X() {cout << "X()" << endl;}
     X(const X&) {cout << "X(const X&)" << endl;}
-    X& operator=(const X&) {cout << "X& operator=" << endl;}
+    X& operator=(const X&) {cout << "X& operator=" << endl; return *this;}
     ~X() {cout << "~X()" << endl;}
 };
 
@@ -558,7 +558,8 @@ public:
 	          sz(std::strlen(cp)), p(a.allocate(sz))
 	          { std::uninitialized_copy(cp, cp + sz, p); }
 	String(const String &s):sz(s.sz), p(a.allocate(s.sz))
-	          { std::uninitialized_copy(s.p, s.p + sz , p); }
+	          { cout << "String copy constructor" << endl;
+                std::uninitialized_copy(s.p, s.p + sz , p); }
     String &operator=(const String &);              
     String &operator=(const char*);
    	~String() noexcept { if (p) a.deallocate(p, sz); }
@@ -574,6 +575,7 @@ private:
 };
 allocator<char> String::a;
 String & String::operator=(const String &rhs) {
+    cout << "String operator=" << endl;
     auto newp = a.allocate(rhs.sz); 
 	uninitialized_copy(rhs.p, rhs.p + rhs.sz, newp);
 	if (p)
@@ -669,6 +671,9 @@ int main() {
     infile.close();
     cin.clear();
 
+    /*13.47*/
+    String s1("One"), s2("Two");
+    cout << s1 << " " << s2 << endl;
 
     return 0;
 }
