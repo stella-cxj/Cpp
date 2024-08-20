@@ -28,6 +28,16 @@ public:
         cout << "copy operator" << endl;
         return *this;
     }
+    HasPtr & operator= (HasPtr &&c) noexcept {
+        if (this != &c) {
+            delete ps;
+            ps = c.ps;
+            i = c.i;
+            c.ps = nullptr;
+            c.i = 0;
+        }
+        return *this;
+    }
     HasPtr & operator= (const string &s) {
         *ps = s;
         return *this;
@@ -110,9 +120,9 @@ public:
         data = make_shared<vector<string>>(*s.data);
         return *this;
     }
-
     vector<string>::size_type size() const {return data->size();}
     void push_back(const string &t) {data->push_back(t);}
+    void push_back(string &&t) {data->push_back(std::move(t));}
     void pop_back() {data->pop_back();}
     string & front() {return data->front();}
     string & back() {return data->back();}
@@ -285,6 +295,8 @@ public:
     explicit Message(const string &s = ""): contents(s) {}
     Message(const Message&);
     Message& operator=(const Message&);
+    Message(Message &&m);
+    Message& operator=(Message &&);
     ~Message();
     void save(Folder&);
     void remove(Folder&);
@@ -295,6 +307,7 @@ private:
     void remove_from_Folders();
     void addFldr(Folder *f) {folders.insert(f);}
     void remFldr(Folder *f) {folders.erase(f);}
+    void move_Folders(Message *);
 };
 Message::Message(const Message& m): contents(m.contents), folders(m.folders) {
     add_to_Folders(m);
@@ -309,7 +322,17 @@ Message& Message::operator=(const Message &m) {
 Message::~Message() {
     remove_from_Folders();
 }
-
+Message::Message(Message &&m): contents(std::move(m.contents)) {
+    move_Folders(&m);
+}
+Message& Message::operator=(Message &&rhs) {
+    if (this != &rhs) {
+        remove_from_Folders();
+        contents = std::move(rhs.contents);
+        move_Folders(&rhs);
+    }
+    return *this;
+}
 class Folder{
 friend class Message;
 friend void swap(Message &, Message &);
@@ -371,6 +394,16 @@ void swap(Message &lhs, Message &rhs) {
     for (auto f : lhs.folders) {f->addMsg(&lhs);}
     for (auto f : rhs.folders) {f->addMsg(&rhs);}
 }
+void Message::move_Folders(Message *m) {
+    folders = std::move(m->folders);
+    for (auto f : folders) {
+        f->remMsg(m);
+        f->addMsg(this);
+    }
+    m->folders.clear();
+}
+
+
 /*13.39*/
 class StrVec {
 public:
@@ -378,6 +411,8 @@ public:
     StrVec(initializer_list<string>);
     StrVec(const StrVec&);
     StrVec &operator=(const StrVec&);
+    StrVec(StrVec &&) noexcept;
+    StrVec &operator=(StrVec &&) noexcept;
     ~StrVec();
     void push_back(const string&);
     size_t size() const {return first_free - elements;}
@@ -436,17 +471,35 @@ StrVec& StrVec::operator=(const StrVec &rhs) {
     first_free = cap = data.second;
     return *this;
 }
+StrVec::StrVec(StrVec &&rhs) noexcept : elements(rhs.elements),
+                              first_free(rhs.first_free),
+                              cap(rhs.cap) {
+    rhs.elements = nullptr;
+    rhs.first_free = nullptr;
+    rhs.cap = nullptr;
+}
+StrVec &StrVec::operator=(StrVec &&rhs) noexcept {
+    if (this != &rhs) {
+        free();
+        elements = rhs.elements;
+        first_free = rhs.first_free;
+        cap = rhs.cap;
+        rhs.elements = nullptr;
+        rhs.first_free = nullptr;
+        rhs.cap = nullptr;
+    }
+    return *this;
+}
+
 void StrVec::reallocate(){
     auto newcapacity = size() ? 2 * size() : 1;
-    auto newdata = alloc.allocate(newcapacity);
-    auto dest = newdata;
-    auto elem = elements;
-    for (size_t i = 0; i != size(); ++i) {
-        alloc.construct(dest++, std::move(*elem++));
-    }
+    auto first = alloc.allocate(newcapacity);
+    auto last = uninitialized_copy(make_move_iterator(begin()), 
+                                    make_move_iterator(end()),
+                                    first);   
     free();
-    elements = newdata;
-    first_free = dest;
+    elements = first;
+    first_free = last;
     cap = elements + newcapacity;
 }
 void StrVec::reallocate(size_t newcapacity){
@@ -569,6 +622,7 @@ public:
 
     String &operator=(const String &);              
     String &operator=(const char*);
+    String &operator=(String &&) noexcept;
    	~String() noexcept { if (p) a.deallocate(p, sz); }
 	const char *begin() { return p; }
 	const char *begin() const { return p; }
@@ -582,7 +636,7 @@ private:
 };
 allocator<char> String::a;
 String & String::operator=(const String &rhs) {
-    cout << "String operator=" << endl;
+    cout << "String copy = operator" << endl;
     auto newp = a.allocate(rhs.sz); 
 	uninitialized_copy(rhs.p, rhs.p + rhs.sz, newp);
 	if (p)
@@ -591,11 +645,20 @@ String & String::operator=(const String &rhs) {
 	sz = rhs.sz; 
     return *this;     
 }
-String& String::operator=(const char *cp) {
+String & String::operator=(const char *cp) {
 	if (p) a.deallocate(p, sz);
 	p = a.allocate(sz = strlen(cp));
 	uninitialized_copy(cp, cp + sz, p);
 	return *this;
+}
+String & String::operator=(String &&rhs) noexcept {
+    cout << "String move = operator" << endl;
+    if (this != &rhs) {
+        if (p) a.deallocate(p, sz);
+        sz = rhs.size(); p = rhs.p;
+        rhs.p = nullptr; rhs.sz = 0; 
+    }
+    return *this;
 }
 ostream &operator<<(ostream &os, const String &s){
 	auto p = s.begin();
@@ -603,6 +666,26 @@ ostream &operator<<(ostream &os, const String &s){
 		os << *p++ ;
 	return os;
 }
+
+/*13.58*/
+class Foo {
+public:
+    Foo sorted() &&;
+    Foo sorted() const &;
+private:
+    vector<int> data;
+};
+Foo Foo::sorted() && {
+    cout << "Rvalue version" << endl;
+    sort(data.begin(), data.end());
+    return *this;
+}
+Foo Foo::sorted() const & {
+    cout << "Lvalue version" << endl;
+    //sort(ret.data.begin(), ret.data.end());
+    return Foo(*this).sorted();
+}
+
 
 int main() {
     /*13.13*/
@@ -695,6 +778,7 @@ int main() {
     cout << s1 << " " << s2 << " " << s3 << endl;
 
     vector<String> vs;
+    //vs.reserve(4);
     vs.push_back(s1);
     for_each(vs.begin(), vs.end(), [](const String &s){cout << s << " ";});
     cout << endl;
@@ -711,6 +795,9 @@ int main() {
     for_each(vs.begin(), vs.end(), [](const String &s){cout << s << " ";});
     cout << endl;
 
+    /*13.58*/
+    Foo f;
+    f.sorted();
     return 0;
 }
 
