@@ -120,6 +120,8 @@ public:
         data = make_shared<vector<string>>(*s.data);
         return *this;
     }
+    string& operator[] (size_t i) { return (*data)[i];}
+    const string& operator[] (size_t i) const {return (*data)[i];}
     vector<string>::size_type size() const {return data->size();}
     void push_back(const string &t) {data->push_back(t);}
     void push_back(string &&t) {data->push_back(std::move(t));}
@@ -135,8 +137,30 @@ public:
 private:
     shared_ptr<vector<string>> data;
 friend class StrBlobPtr;
+friend bool operator==(const StrBlob &, const StrBlob &);
+friend bool operator< (const StrBlob &, const StrBlob &);
+friend bool operator<= (const StrBlob &, const StrBlob &);
+friend bool operator> (const StrBlob &, const StrBlob &);
+friend bool operator>= (const StrBlob &, const StrBlob &);
 };
-
+bool operator==(const StrBlob &lhs, const StrBlob &rhs) {
+    return lhs.data == rhs.data ;
+}
+bool operator!=(const StrBlob &lhs, const StrBlob &rhs) {
+    return !(lhs == rhs);
+}
+bool operator< (const StrBlob &lhs, const StrBlob &rhs) {
+    return *lhs.data < *rhs.data;
+}
+bool operator<= (const StrBlob &lhs, const StrBlob &rhs) {
+    return *lhs.data <= *rhs.data;
+}
+bool operator> (const StrBlob &lhs, const StrBlob &rhs) {
+    return *lhs.data > *rhs.data;
+}
+bool operator>= (const StrBlob &lhs, const StrBlob &rhs) {
+    return *lhs.data >= *rhs.data;
+}
 class StrBlobPtr {
 public:
     StrBlobPtr(): curr(0) {}
@@ -151,6 +175,14 @@ public:
         ++curr;
         return *this;
     }
+    string& operator[] (size_t i) { return (*wptr.lock())[i];}
+    const string& operator[] (size_t i) const {return (*wptr.lock())[i];}
+    StrBlobPtr& operator++();
+    StrBlobPtr& operator--();
+    StrBlobPtr operator++(int);
+    StrBlobPtr operator--(int);
+    StrBlobPtr operator+ (int n);
+    StrBlobPtr operator- (int n);
 private:
     shared_ptr<vector<string>> check(size_t i, const string &msg) const {
         auto ret = wptr.lock();
@@ -163,8 +195,87 @@ private:
     weak_ptr<vector<string>> wptr;
     size_t curr;
 friend bool eq(const StrBlobPtr &, const StrBlobPtr &);
+friend bool operator== (const StrBlobPtr &, const StrBlobPtr &);
+friend bool operator< (const StrBlobPtr &, const StrBlobPtr &);
+friend bool operator<= (const StrBlobPtr &, const StrBlobPtr &);
+friend bool operator> (const StrBlobPtr &, const StrBlobPtr &);
+friend bool operator>= (const StrBlobPtr &, const StrBlobPtr &);
 };
+bool operator== (const StrBlobPtr &lhs, const StrBlobPtr &rhs) {
+    auto l = lhs.wptr.lock(), r = rhs.wptr.lock();
+    if (l == r)
+        return (!r || lhs.curr == rhs.curr);
+    else
+        return false;
+}
+bool operator!= (const StrBlobPtr &lhs, const StrBlobPtr &rhs) {
+    return !(lhs == rhs);
+}
+bool operator< (const StrBlobPtr &lhs, const StrBlobPtr &rhs) {
+    auto l = lhs.wptr.lock(), r = rhs.wptr.lock();
+    if (l == r) {
+        if (!r) return false;
+        return (lhs.curr < rhs.curr);
+    }
+    else
+        return false;
+}
+bool operator<= (const StrBlobPtr &lhs, const StrBlobPtr &rhs) {
+    auto l = lhs.wptr.lock(), r = rhs.wptr.lock();
+    if (l == r) {
+        return (!r || lhs.curr <= rhs.curr);
+    }
+    else
+        return false;
+}
+bool operator> (const StrBlobPtr &lhs, const StrBlobPtr &rhs) {
+    auto l = lhs.wptr.lock(), r = rhs.wptr.lock();
+    if (l == r) {
+        if (!r) return false;
+        return (lhs.curr > rhs.curr);
+    }
+    else
+        return false;
+}
+bool operator>= (const StrBlobPtr &lhs, const StrBlobPtr &rhs) {
+    auto l = lhs.wptr.lock(), r = rhs.wptr.lock();
+    if (l == r) {
+        return (!r || lhs.curr >= rhs.curr);
+    }
+    else
+        return false;
+}
+StrBlobPtr& StrBlobPtr::operator++() {
+    check(curr, "increment past end of StrBlobPtr");
+    ++curr;//前置版本
+    return *this;
+}
+StrBlobPtr& StrBlobPtr::operator--() {
+    --curr;//前置版本
+    check(curr, "decrement past begin of StrBlobPtr");
+    return *this;
+}
+StrBlobPtr StrBlobPtr::operator++(int){
+    StrBlobPtr ret = *this;
+    ++*this;//后置版本
+    return ret;
+}
+StrBlobPtr StrBlobPtr::operator--(int){
+    StrBlobPtr ret = *this;
+    --*this;//后置版本
+    return ret;
 
+}
+StrBlobPtr StrBlobPtr::operator+ (int n) {
+    auto ret = *this;
+    ret.curr += n;
+    return ret;
+}
+StrBlobPtr StrBlobPtr::operator- (int n) {
+    auto ret = *this;
+    ret.curr -= n;
+    return ret;
+}
 StrBlobPtr StrBlob::begin() {
     return StrBlobPtr(*this);
 }
@@ -414,6 +525,7 @@ public:
     StrVec(StrVec &&) noexcept;
     StrVec &operator=(StrVec &&) noexcept;
     ~StrVec();
+    StrVec &operator=(initializer_list<string>);
     void push_back(const string&);
     size_t size() const {return first_free - elements;}
     size_t capacity() const {return cap - elements;}
@@ -422,6 +534,8 @@ public:
     void reserve(size_t n) {if (n > capacity()) reallocate(n);}
     inline void resize(size_t);
     inline void resize(size_t, const string &);
+    string& operator[] (size_t i) { return elements[i];}
+    const string& operator[] (size_t i) const {return elements[i];}
     
 private:
     static allocator<string> alloc;
@@ -433,6 +547,11 @@ private:
     string *elements;
     string *first_free;
     string *cap;
+friend bool operator==(const StrVec&, const StrVec&);
+friend bool operator< (const StrVec&, const StrVec&);
+friend bool operator<= (const StrVec&, const StrVec&);
+friend bool operator> (const StrVec&, const StrVec&);
+friend bool operator>= (const StrVec&, const StrVec&);
 };
 allocator<string> StrVec::alloc;
 void StrVec::push_back(const string& s) {
@@ -489,6 +608,70 @@ StrVec &StrVec::operator=(StrVec &&rhs) noexcept {
         rhs.cap = nullptr;
     }
     return *this;
+}
+StrVec& StrVec::operator=(initializer_list<string> il) {
+    auto data = alloc_n_copy(il.begin(), il.end());
+    free();
+    elements = data.first;
+    first_free = cap = data.second;
+    return *this;
+}
+bool operator==(const StrVec& lhs, const StrVec& rhs){
+    if (lhs.size() != rhs.size()) return false;
+    for (auto iter1 = lhs.begin(), iter2 = rhs.begin(); 
+        iter1 != lhs.end() && iter2 != rhs.end(); 
+        iter1++, iter2++) {
+            if (*iter1 != *iter2)
+                return false;
+        }
+    return true;
+}
+bool operator!=(const StrVec& lhs, const StrVec& rhs) {
+    return !(lhs == rhs);
+}
+bool operator< (const StrVec& lhs, const StrVec& rhs) {
+    auto p1 = lhs.begin(), p2 = rhs.begin();
+    for (; p1 != lhs.end() && p2 != rhs.end(); p1++, p2++) 
+        if (*p1 < *p2)
+            return true;
+        else if (*p1 > *p2)
+            return false;
+    if (p1 == lhs.end() && p2 != rhs.end())
+        return true;
+    return false;
+}
+bool operator<= (const StrVec& lhs, const StrVec& rhs) {
+    auto p1 = lhs.begin(), p2 = rhs.begin();
+    for (; p1 != lhs.end() && p2 != rhs.end(); p1++, p2++) 
+        if (*p1 < *p2)
+            return true;
+        else if (*p1 > *p2)
+            return false;
+    if (p1 == lhs.end())
+        return true;
+    return false;
+}
+bool operator> (const StrVec& lhs, const StrVec& rhs) {
+    auto p1 = lhs.begin(), p2 = rhs.begin();
+    for (; p1 != lhs.end() && p2 != rhs.end(); p1++, p2++) 
+        if (*p1 < *p2)
+            return false;
+        else if (*p1 > *p2)
+            return true;
+    if (p1 != lhs.end() && p2 == rhs.end())
+        return true;
+    return false;
+}
+bool operator>= (const StrVec& lhs, const StrVec& rhs) {
+    auto p1 = lhs.begin(), p2 = rhs.begin();
+    for (; p1 != lhs.end() && p2 != rhs.end(); p1++, p2++) 
+        if (*p1 < *p2)
+            return false;
+        else if (*p1 > *p2)
+            return true;
+    if (p2 == rhs.end())
+        return true;
+    return false;
 }
 
 void StrVec::reallocate(){
@@ -629,10 +812,18 @@ public:
 	const char *end() { return p + sz; }
 	const char *end() const { return p + sz; }
 	size_t size() const { return sz; }
+    char& operator[] (size_t i) { return p[i];}
+    const char& operator[] (size_t i) const {return p[i];}
+
 private:
     static allocator<char> a;
     size_t sz = 0;
     char *p = nullptr;
+friend bool operator==(const String &, const String &);
+friend bool operator< (const String &, const String &);
+friend bool operator<= (const String &, const String &);
+friend bool operator> (const String &, const String &);
+friend bool operator>= (const String &, const String &);
 };
 allocator<char> String::a;
 String & String::operator=(const String &rhs) {
@@ -661,10 +852,26 @@ String & String::operator=(String &&rhs) noexcept {
     return *this;
 }
 ostream &operator<<(ostream &os, const String &s){
-	auto p = s.begin();
-	while (p != s.end())
-		os << *p++ ;
+    os << s.p;
 	return os;
+}
+bool operator==(const String &s1, const String &s2) {
+    return strcmp(s1.p, s2.p);
+}
+bool operator!=(const String &s1, const String &s2) {
+    return !(s1 == s2);
+}
+bool operator< (const String &s1, const String &s2) {
+    return strcmp(s1.p, s2.p) < 0;
+}
+bool operator<= (const String &s1, const String &s2) {
+    return strcmp(s1.p, s2.p) <= 0;
+}
+bool operator> (const String &s1, const String &s2) {
+    return strcmp(s1.p, s2.p) > 0;
+}
+bool operator>= (const String &s1, const String &s2) {
+    return strcmp(s1.p, s2.p) >= 0;
 }
 
 /*13.58*/
@@ -798,6 +1005,8 @@ int main() {
     /*13.58*/
     Foo f;
     f.sorted();
+
+
     return 0;
 }
 
