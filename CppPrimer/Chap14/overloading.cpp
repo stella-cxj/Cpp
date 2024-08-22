@@ -1,6 +1,9 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <vector>
+#include <algorithm>
+#include <functional>
 
 using namespace std;
 
@@ -133,9 +136,59 @@ bool operator>= (const Date& lhs, const Date& rhs) {
     return (lhs > rhs) || (lhs == rhs);
 }
 
+/*14.34*/
+class Condi {
+public:
+    Condi(){};
+    int operator()(int a, int b, int c){
+        return a ? b : c;
+    }
+};
 
+/*14.35*/
+class ReadString{
+public:
+    ReadString(istream &is = cin) : input(is){}
+    string operator()(){
+        string s;
+        if (!getline(input, s))
+            s = "";
+        return s;
+    }
+private:
+    istream &input;
+};
+
+/*14.37*/
+class Equal {
+public:
+    Equal(){}
+    bool operator()(int a, int b) {return a==b;}
+};
 int main() {
 
+    /*14.36*/
+    vector<string> ivec;
+    ReadString read;
+    cout << "Please enter some strings" << endl;
+    while(true) {
+        string s = read();
+        if (!s.empty())
+            ivec.push_back(s);
+        else
+            break;
+    }
+    for (auto i : ivec) cout << i << " ";
+    cout << endl;
+    cin.clear();
+
+    /*14.37*/
+    vector<int> ivec37 = {1,2,3,4,3,4,5};
+    int oldV = 4, newV = 400;
+    Equal eq;
+    replace_if(ivec37.begin(), ivec37.end(), bind(eq, std::placeholders::_1, oldV), newV);
+    for (auto i : ivec37) cout << i << " ";
+    cout << endl;
 
     return 0;
 }
