@@ -4,6 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <functional>
+#include <fstream>
 
 using namespace std;
 
@@ -165,6 +166,27 @@ public:
     Equal(){}
     bool operator()(int a, int b) {return a==b;}
 };
+
+/*14.38*/
+class LengthEqual{
+public:
+    LengthEqual(){}
+    bool operator()(const string &s, int length) {
+        return s.size() == length;
+    }
+};
+void trans(string &s) {
+
+    for (auto i = s.begin(); i != s.end();) {
+        *i = tolower(*i);
+        if (ispunct(*i)) {
+            i = s.erase(i);
+        } else {
+            ++i;
+        }
+    }
+}
+    
 int main() {
 
     /*14.36*/
@@ -188,6 +210,22 @@ int main() {
     Equal eq;
     replace_if(ivec37.begin(), ivec37.end(), bind(eq, std::placeholders::_1, oldV), newV);
     for (auto i : ivec37) cout << i << " ";
+    cout << endl;
+
+    /*14.38*/
+    LengthEqual lengthequal;
+    ifstream infile("words");
+    vector<string> words;
+    int min = 1, max = 10;
+    string word;
+    while (infile >> word) {
+        trans(word);
+        words.push_back(word);
+    }
+    for (auto i = min; i <= max; i++) {
+        auto count = count_if(words.begin(), words.end(), bind(lengthequal, std::placeholders::_1, i));
+        cout << "length " << i << " : " << count << endl;
+    }
     cout << endl;
 
     return 0;
