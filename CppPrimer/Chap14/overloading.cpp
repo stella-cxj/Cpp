@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <functional>
 #include <fstream>
+#include <map>
 
 using namespace std;
 
@@ -186,7 +187,99 @@ void trans(string &s) {
         }
     }
 }
-    
+
+/*14.39*/
+class LengthBetween{
+public:
+    LengthBetween(int minv, int maxv): min(minv), max(maxv){}
+    bool operator()(const string &s) {
+        return (s.size() >= min) && (s.size() <= max);
+    }
+private:
+    int min;
+    int max;
+};
+class LengthNotShorter{
+public:
+    LengthNotShorter(int minv): lower(minv){}
+    bool operator()(const string &s) {
+        return (s.size() >= lower);
+    }
+private:
+    int lower;
+};
+
+class StringLesser {
+public:
+    StringLesser(){}
+    bool operator()(const string &a, const string &b) {
+        return a.size() < b.size();
+    }
+};
+class StringNotLess{
+public:
+    StringNotLess(int sz): size(sz) {}
+    bool operator()(const string &a) {
+        return a.size() >= size;
+    }
+private:
+    int size;
+};
+class PrintString {
+public:
+    PrintString(){}
+    ostream& operator()(const string &s) {cout << s << " ";}
+};
+/*14.40*/
+void elimDups(vector<string> &words)
+{
+    // sort words alphabetically so we can find the duplicates
+    sort(words.begin(), words.end());
+	for_each(words.begin(), words.end(), 
+	         [](const string &s) { cout << s << " "; });
+	cout << endl;
+
+
+    // unique reorders the input so that each word appears once in the
+    // front part of the range 
+	// returns an iterator one past the unique range
+    auto end_unique = unique(words.begin(), words.end());
+	for_each(words.begin(), words.end(), 
+	         [](const string &s) { cout << s << " "; });
+	cout << endl;
+
+    // erase uses a vector operation to remove the nonunique elements
+    words.erase(end_unique, words.end());
+	for_each(words.begin(), words.end(), 
+	         [](const string &s) { cout << s << " "; });
+	cout << endl;
+}
+void biggies(vector<string> &words, vector<string>::size_type sz) {
+    elimDups(words);
+    StringLesser lesser;
+    StringNotLess notLesser(sz);
+    stable_sort(words.begin(), words.end(), lesser);
+    auto wc = find_if(words.begin(), words.end(), notLesser);
+    auto count = words.end() - wc;
+    cout << count << " words of length " << sz << " or longer" << endl;
+    PrintString print;
+    for_each(wc, words.end(), print);
+    cout << endl;
+}
+
+/*14.44*/
+int add(int i, int j) {return i+j;}
+auto mod = [](int i, int j){return i%j;};
+struct divide {
+    int operator()(int denominator, int divisor) {return denominator/divisor;}
+};
+
+class SmallInt{
+public:
+    explicit operator int() const {return val;}
+private:
+    size_t val;
+};
 int main() {
 
     /*14.36*/
@@ -228,5 +321,62 @@ int main() {
     }
     cout << endl;
 
+    /*14.39*/
+    LengthNotShorter lengthNotShorter(10);
+    LengthBetween lengthBetween(1, 9);
+    auto count = count_if(words.begin(), words.end(), lengthNotShorter);
+    cout << "length not shorter than 10: " << count << endl;
+    count = count_if(words.begin(), words.end(), lengthBetween);
+    cout << "length between 1~9: " << count << endl;
+
+    /*14.40*/
+    biggies(words, 5);
+
+    /*4.42*/
+    vector<int> ivec42 = {4000, 5000, 1023, 1024, 1025, 1000, 7000};
+    auto c = count_if(ivec42.begin(), ivec42.end(), bind2nd(greater<int>(), 1024));
+    cout << c << " greater than 1024." << endl;
+    vector<string> svec42 = {"pooh", "pooh", "pooh", "pooh", "abc", "pooh", "b"};
+    auto s = find_if(svec42.begin(), svec42.end(), bind2nd(not_equal_to<string>(), "pooh"));
+    cout << "first word not pooh is " << *s << endl;
+    transform(ivec42.begin(), ivec42.end(), ivec42.begin(), bind2nd(multiplies<int>(), 2));
+    for_each(ivec42.begin(), ivec42.end(), [](const int &i) { cout << i << " "; });
+    cout << endl;
+
+    /*14.43*/
+    int div = 2;
+    vector<int> ivec43 = {2,3,4,6,8,9};
+    auto count43 = count_if(ivec43.begin(), ivec43.end(), bind2nd(modulus<int>(), div));
+    cout << count43 << " in the vector cannot divided by 2" << endl;
+
+    /*14.44*/
+    map<string, function<int(int,int)>> binops = {
+        {"+", add},
+        {"-", std::minus<int>()},
+        {"/", divide()},
+        {"*", [](int i, int j){return i*j;}},
+        {"%", mod}
+    };
+    int left, right;
+    string op;
+    while (true) {
+        cout << "left operand:";
+        if (cin >> left) {
+            cout << "op: " ;
+            if (cin >> op) {
+                cout << "right operand: " ;
+                if (cin >> right) {
+                    cout << binops[op](left, right) << endl;
+                }
+                else break;
+            } else break;
+        } else break;
+    }
+    cin.clear();
+
+    SmallInt si=3;
+
+
     return 0;
 }
+
