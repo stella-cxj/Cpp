@@ -19,6 +19,9 @@ public:
     Sales_data & operator+=(const Sales_data &);
     Sales_data & operator-=(const Sales_data &);
     Sales_data & operator=(const string &isbn);
+    explicit operator string() const {return bookNo;}
+    explicit operator double() const {return revenue;}
+
 private:
     double avg_price() const {return units_sold ? revenue/units_sold : 0;}
     string bookNo;
@@ -85,6 +88,17 @@ public:
     Date() {}
     Date(int y, int m, int d) {year = y; month = m; day = d;}
     Date& operator=(const string&);
+    explicit operator bool() {
+        vector<vector<int>> days_per_month = {
+            {31,28,31,30,31,30,31,31,30,31,30,31},
+            {31,29,31,30,31,30,31,31,30,31,30,31}
+        };
+        return 1 <= month && month <=12 && 1 <= day && 
+               day <= days_per_month[is_LeapYear()?1:0][month - 1];
+    }
+    bool is_LeapYear() {
+        return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+    }
 private:
     int year, month, day;
 friend ostream& operator<< (ostream&, const Date&);
@@ -274,12 +288,7 @@ struct divide {
     int operator()(int denominator, int divisor) {return denominator/divisor;}
 };
 
-class SmallInt{
-public:
-    explicit operator int() const {return val;}
-private:
-    size_t val;
-};
+
 int main() {
 
     /*14.36*/
@@ -373,8 +382,6 @@ int main() {
         } else break;
     }
     cin.clear();
-
-    SmallInt si=3;
 
 
     return 0;

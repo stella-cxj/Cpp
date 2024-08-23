@@ -183,6 +183,13 @@ public:
     StrBlobPtr operator--(int);
     StrBlobPtr operator+ (int n);
     StrBlobPtr operator- (int n);
+    string& operator*() const {
+        auto p = check(curr, "dereference past end");
+        return (*p)[curr];
+    }
+    string* operator->() const {
+        return & this->operator*();
+    }
 private:
     shared_ptr<vector<string>> check(size_t i, const string &msg) const {
         auto ret = wptr.lock();
@@ -297,6 +304,16 @@ bool eq(const StrBlobPtr &lhs, const StrBlobPtr &rhs) {
     else    
         return false;
 }
+/*14.32*/
+class pStrBlobPtr{
+public:
+    string* operator->() const {
+        return p->operator->();
+    }
+private:
+    StrBlobPtr* p;
+};
+
 
 /*13.27*/
 class HasPtr1 {
