@@ -6,6 +6,7 @@
 #include <vector>
 #include <set>
 #include <map>
+#include <algorithm>
 
 using namespace std;
 
@@ -140,62 +141,184 @@ void trans(string &s) {
         }
     }
 }
-class QueryResult {
-public:
-    QueryResult() = default;
-    QueryResult(shared_ptr<vector<string>> txt, shared_ptr<set<int>> lineno, const string &str) : text(txt), line_no(lineno), s(str) {}
-    ostream & print(ostream & os) const {
-        os << this->s << " occurs " << this->line_no->size() << " times." << endl;
-        for (auto i = this->line_no->begin(); i != this->line_no->end(); i++) {
-            os << "\t" << "(line " << *i << ") " << (*(this->text))[*i - 1] << endl;
-        }
-        return os;
-    }
-    set<int>::iterator begin() {return line_no->begin();}
-    set<int>::iterator end() {return line_no->end();}
-    shared_ptr<vector<string>> get_file() {return text;}
-    ~QueryResult() {}
-private:
-    int total_time = 0;
-    string s;
-    shared_ptr<vector<string>> text;
-    shared_ptr<set<int>> line_no;
-};
-
+string make_plural(size_t ctr, const string &word, const string &ending = "s") {
+    return (ctr > 1) ? word+ending : word;
+}
+class QueryResult; // declaration needed for return type in the query function
 class TextQuery {
 public:
-    TextQuery() = default;
-    TextQuery(ifstream &);
-    QueryResult query(const string &);
-    ~TextQuery() {}
+	using line_no = std::vector<std::string>::size_type;
+	TextQuery(std::ifstream&);
+    QueryResult query(const std::string&) const; 
 private:
-    shared_ptr<vector<string>> text;
-    map<string, set<int>> word_line;
+    std::shared_ptr<std::vector<std::string>> file; // input file
+    // maps each word to the set of the lines in which that word appears
+    std::map<std::string, 
+	         std::shared_ptr<std::set<line_no>>> wm;  
+
+};
+TextQuery::TextQuery(ifstream &is): file(new vector<string>)
+{
+    string text;
+    while (getline(is, text)) {       // for each line in the file
+		file->push_back(text);        // remember this line of text
+		int n = file->size() - 1;     // the current line number
+		istringstream line(text);     // separate the line into words
+		string word;               
+		while (line >> word) {        // for each word in that line
+            trans(word);
+            // if word isn't already in wm, subscripting adds a new entry
+            auto &lines = wm[word]; // lines is a shared_ptr 
+            if (!lines) // that pointer is null the first time we see word
+                lines.reset(new set<line_no>); // allocate a new set
+            lines->insert(n);      // insert this line number
+		}
+	}
+}
+
+class QueryResult {
+friend std::ostream& print(std::ostream&, const QueryResult&);
+public:
+	typedef std::vector<std::string>::size_type line_no;
+	typedef std::set<line_no>::const_iterator line_it;
+	QueryResult(std::string s, 
+	            std::shared_ptr<std::set<line_no>> p, 
+	            std::shared_ptr<std::vector<std::string>> f):
+		sought(s), lines(p), file(f) { }
+	std::set<line_no>::size_type size() const  { return lines->size(); }
+	line_it begin() const { return lines->cbegin(); }
+	line_it end() const   { return lines->cend(); }
+	std::shared_ptr<std::vector<std::string>> get_file() { return file; }
+private:
+	std::string sought;  // word this query represents
+	std::shared_ptr<std::set<line_no>> lines; // lines it's on
+	std::shared_ptr<std::vector<std::string>> file;  //input file
 };
 
-TextQuery::TextQuery (ifstream &in) {
-    
-    this->text = make_shared<vector<string>>();
+ostream &print(ostream & os, const QueryResult &qr)
+{
+    // if the word was found, print the count and all occurrences
+    os << qr.sought << " occurs " << qr.lines->size() << " "
+       << make_plural(qr.lines->size(), "time", "s") << endl;
 
-    string line;
-    int line_no = 0;
-    while(getline(in, line)) {
-        line_no++;
-        this->text->push_back(line);
-        istringstream stream(line);
-        string word;        
-        while (stream >> word) {
-            trans(word);
-            this->word_line[word].insert(line_no);
-        }
+    // print each line in which the word appeared
+	for (auto num : *qr.lines) // for every element in the set 
+		// don't confound the user with text lines starting at 0
+        os << "\t(line " << num + 1 << ") " 
+		   << *(qr.file->begin() + num) << endl;
+
+	return os;
+}
+QueryResult TextQuery::query(const string &sought) const
+{
+	// we'll return a pointer to this set if we don't find sought
+	static shared_ptr<set<line_no>> nodata(new set<line_no>); 
+
+    // use find and not a subscript to avoid adding words to wm!
+    auto loc = wm.find(sought);
+
+	if (loc == wm.end()) 
+		return QueryResult(sought, nodata, file);  // not found
+	else 
+		return QueryResult(sought, loc->second, file);
+}
+
+class Query_base {
+friend class Query;
+protected:
+    using line_no = TextQuery::line_no;
+    virtual ~Query_base() = default;
+private:
+    virtual QueryResult eval(const TextQuery&) const = 0;
+    virtual string rep() const = 0;
+};
+
+class Query {
+friend Query operator~(const Query&);
+friend Query operator&(const Query&, const Query&);
+friend Query operator|(const Query&, const Query&);
+public:
+    Query(const string&);
+    QueryResult eval(const TextQuery& t) const {return q->eval(t);}
+    string rep() const {return q->rep();}
+private:
+    Query(shared_ptr<Query_base> query): q(query) {}
+    shared_ptr<Query_base> q;
+};
+ostream& operator<<(ostream &os, const Query &query){
+    return os << query.rep();
+}
+
+class WordQuery : public Query_base{
+friend class Query;
+    WordQuery(const string &s): query_word(s) {}
+    QueryResult eval(const TextQuery& t) const {return t.query(query_word);}
+    string rep() const {return query_word;}
+    string query_word;
+};
+inline Query::Query(const string &s): q(new WordQuery(s)) {}
+class NotQuery: public Query_base{
+friend Query operator~(const Query &);
+    NotQuery(const Query &q): query(q) {}
+    string rep() const {return "~(" + query.rep() + ")";}
+    QueryResult eval(const TextQuery&) const;
+    Query query;
+};
+inline Query operator~(const Query &operand) {
+    return shared_ptr<Query_base>(new NotQuery(operand));
+}
+QueryResult NotQuery::eval(const TextQuery& text) const {
+    auto result = query.eval(text);
+    auto ret_lines = make_shared<set<line_no>>();
+    auto beg = result.begin(), end = result.end();
+    auto sz = result.get_file()->size();
+    for (size_t n = 0; n != sz; ++n) {
+        if (beg == end || *beg != n)
+            ret_lines->insert(n);
+        else if (beg != end)
+            ++beg;
     }
+    return QueryResult(rep(), ret_lines, result.get_file());
+}
+class BinaryQuery: public Query_base{
+protected:
+    BinaryQuery(const Query &l, const Query &r, string s):
+        lhs(l), rhs(r), opSym(s) {}
+    string rep() const {return "(" + lhs.rep() + " " + opSym + " " + rhs.rep() + ")";}
+    Query lhs, rhs;
+    string opSym;
+};
+class AndQuery: public BinaryQuery {
+friend Query operator&(const Query&, const Query&);
+    AndQuery(const Query &left, const Query &right): BinaryQuery(left, right, "&") {}
+    QueryResult eval(const TextQuery&) const;
+};
+inline Query operator&(const Query& lhs, const Query& rhs) {
+    return shared_ptr<Query_base>(new AndQuery(lhs, rhs));
+}
+QueryResult AndQuery::eval(const TextQuery& text) const {
+    auto left = lhs.eval(text), right = rhs.eval(text);
+    auto ret_lines = make_shared<set<line_no>>();
+    set_intersection(left.begin(), left.end(),
+                     right.begin(), right.end(), 
+                     inserter(*ret_lines, ret_lines->begin()));
+    return QueryResult(rep(), ret_lines, left.get_file());
+}
+class OrQuery: public BinaryQuery {
+friend Query operator|(const Query&, const Query&);
+    OrQuery(const Query &left, const Query &right): BinaryQuery(left, right, "|") {}
+    QueryResult eval(const TextQuery&) const;
+};
+inline Query operator|(const Query& lhs, const Query& rhs) {
+    return shared_ptr<Query_base>(new OrQuery(lhs, rhs));
+}
+QueryResult OrQuery::eval(const TextQuery& text) const {
+    auto right = rhs.eval(text), left = lhs.eval(text);
+    auto ret_lines = make_shared<set<line_no>>(left.begin(), left.end());
+    ret_lines->insert(right.begin(), right.end());
+    return QueryResult(rep(), ret_lines, left.get_file());
 }
 
-QueryResult TextQuery::query(const string &s) {
-    auto pset = make_shared<set<int>>(this->word_line[s]);
-    QueryResult qr(this->text, pset, s);
-    return qr;
-}
 
 int main() {
     
@@ -230,6 +353,11 @@ int main() {
         sum += i->net_price(quantity);
     cout << "sum= " << sum << endl;
 
-    
+    /*15.36*/
+    ifstream file("words");
+    TextQuery tQuery(file);
+    Query qu = Query("fiery") & Query("bird") | Query("wind");
+    print(cout, qu.eval(tQuery));
+
     return 0;
 }
