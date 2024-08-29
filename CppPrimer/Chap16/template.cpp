@@ -128,6 +128,37 @@ BlobPtr<T> BlobPtr<T>::operator++(int) {
     ++*this;
     return ret;
 }
+
+/*16.14*/
+template<unsigned H, unsigned W>
+class Screen {
+//friend void Win_mgr::clear(vector<Screen>::size_type);
+public:
+    Screen() :content(W * H, ' ') {}
+    Screen(char c) :content(W * H, c) {}
+    char get() const {return content[cursor];}
+    inline char get(int, int) const ;
+    Screen &clear(char = bkground);
+private:
+    static const char bkground = ' ';
+    Screen &move(int r, int c) {
+        cursor = r*W + c;
+        return *this;
+    }
+    Screen &set(char c) {
+        content[cursor] = c;
+        return *this;
+    }
+    const Screen &display(ostream &os) const {
+        os << content;
+        return *this;
+    }
+    //pos size() const;
+private:
+    string content;
+    unsigned cursor = 0;
+};
+
 int main() {
     /*16.4*/
     vector<int> ivec = {1,4,2,4,6};
