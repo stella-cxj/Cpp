@@ -1,8 +1,12 @@
 #include <iostream>
+#include <sstream>
+#include <fstream>
 #include <string>
 #include <vector>
 #include <list>
 #include <memory>
+#include <set>
+#include <map>
 
 using namespace std;
 
@@ -52,6 +56,7 @@ public:
     typedef typename vector<T>::size_type size_type;
     Blob(): data(make_shared<vector<T>>()) {}
     Blob(initializer_list<T> il): data(make_shared<vector<T>>(il)) {}
+    template<typename IT>Blob(IT b, IT e): data(make_shared<vector<T>>(b, e)) {}
     size_type size() const {return data->size();}
     bool empty() const {return data->empty();}
     void push_back(const T &t) {data->push_back(t);}
@@ -437,7 +442,80 @@ void func1(T& container) {
         cout << *i << " ";
     cout << endl;
 }
+/*16.21*/
+class DebugDelete{
+public:
+    DebugDelete(ostream &s = cerr): os(s) {}
+    template<typename T> void operator()(T *p) {os<<"deleting object"<<endl;delete p;}
+private:
+    ostream &os;
+};
+/*16.22*/
+void trans(string &s) {
 
+    for (auto i = s.begin(); i != s.end();) {
+        *i = tolower(*i);
+        if (ispunct(*i)) {
+            i = s.erase(i);
+        } else {
+            ++i;
+        }
+    }
+}
+class QueryResult {
+public:
+    QueryResult() = default;
+    QueryResult(shared_ptr<vector<string>> txt, shared_ptr<set<int>> lineno, const string &str) : text(txt), line_no(lineno), s(str) {}
+    ostream & print(ostream & os) const {
+        os << this->s << " occurs " << this->line_no->size() << " times." << endl;
+        for (auto i = this->line_no->begin(); i != this->line_no->end(); i++) {
+            os << "\t" << "(line " << *i << ") " << (*(this->text))[*i - 1] << endl;
+        }
+        return os;
+    }
+    set<int>::iterator begin() {return line_no->begin();}
+    set<int>::iterator end() {return line_no->end();}
+    shared_ptr<vector<string>> get_file() {return text;}
+    ~QueryResult() {}
+private:
+    int total_time = 0;
+    string s;
+    shared_ptr<vector<string>> text;
+    shared_ptr<set<int>> line_no;
+};
+class TextQuery {
+public:
+    TextQuery() = default;
+    TextQuery(ifstream &);
+    QueryResult query(const string &);
+    ~TextQuery() {}
+private:
+    shared_ptr<vector<string>> text;
+    map<string, set<int>> word_line;
+};
+
+TextQuery::TextQuery (ifstream &in):text(new vector<string>, DebugDelete()) {
+    
+    //this->text = make_shared<vector<string>>();
+    string line;
+    int line_no = 0;
+    while(getline(in, line)) {
+        line_no++;
+        this->text->push_back(line);
+        istringstream stream(line);
+        string word;        
+        while (stream >> word) {
+            trans(word);
+            this->word_line[word].insert(line_no);
+        }
+    }
+}
+
+QueryResult TextQuery::query(const string &s) {
+    auto pset = make_shared<set<int>>(this->word_line[s]);
+    QueryResult qr(this->text, pset, s);
+    return qr;
+}
 
 int main() {
     /*16.4*/
@@ -472,5 +550,21 @@ int main() {
     /*16.20*/
     vector<string> svec20 = {"5","12","6","34","1534","1"};
     func1(svec20);
+
+    /*16.23*/
+    ifstream infile("..\\Chap12\\words");
+    TextQuery tq(infile);
+    while(true) {
+        cout << "1. enter word to look for, or q to quit: ";
+        string s;
+        if (!(cin >> s) || s == "q") break;
+        const QueryResult& qr = tq.query(s);
+        qr.print(cout) << endl;
+    }
+    infile.close();
+    cin.clear();
+
+
+
     return 0;
 }
