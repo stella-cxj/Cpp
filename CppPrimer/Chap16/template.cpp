@@ -7,6 +7,7 @@
 #include <memory>
 #include <set>
 #include <map>
+#include <algorithm>
 
 using namespace std;
 
@@ -19,7 +20,7 @@ int compare(const T &v1, const T &v2) {
 }
 /*16.4*/
 template<typename IT, typename T>
-IT find(IT begin, IT end, const T &val) {
+IT myfind(IT begin, IT end, const T &val) {
     IT i;
     for (i = begin; i != end; i++) {
         if (*i == val)
@@ -317,7 +318,7 @@ public:
     inline void resize(size_t, const T &);
     T& operator[] (size_t i) { return elements[i];}
     const T& operator[] (size_t i) const {return elements[i];}
-    
+    template<class... Args> void emplace_back(Args&&...);    
 private:
     static allocator<T> alloc;
     void chk_n_alloc() { if (size() == capacity()) reallocate();}
@@ -515,6 +516,14 @@ inline void Vec<T>::resize(size_t n, const T &s) {
         }
     }
 }
+template <typename T>
+template<class... Args> 
+inline void Vec<T>::emplace_back(Args&&... args) {
+    chk_n_alloc();
+    alloc.construct(first_free++, std::forward<Args>(args)...);
+}
+
+
 /*16.19*/
 template <typename T>
 void func(T& container) {
@@ -679,6 +688,7 @@ ostream &errMsg(ostream& os, const Args&... rest) {
     return print(os, debug_rep(rest)...);
 }
 
+
 /*16.58*/
 class StrVec {
 public:
@@ -716,6 +726,7 @@ friend bool operator< (const StrVec&, const StrVec&);
 friend bool operator<= (const StrVec&, const StrVec&);
 friend bool operator> (const StrVec&, const StrVec&);
 friend bool operator>= (const StrVec&, const StrVec&);
+friend ostream& operator<< (ostream&, const StrVec&);
 };
 allocator<string> StrVec::alloc;
 void StrVec::push_back(const string& s) {
@@ -837,7 +848,11 @@ bool operator>= (const StrVec& lhs, const StrVec& rhs) {
         return true;
     return false;
 }
-
+ostream& operator<< (ostream& os, const StrVec& svec) {
+    for (auto i = svec.elements; i != svec.first_free; i++)
+        os << *i <<" ";
+    return os;
+}
 void StrVec::reallocate(){
     auto newcapacity = size() ? 2 * size() : 1;
     auto first = alloc.allocate(newcapacity);
@@ -884,13 +899,14 @@ template<class... Args> inline void StrVec::emplace_back(Args&&... args) {
     alloc.construct(first_free++, std::forward<Args>(args)...);
 }
 
+
 int main() {
 
     /*16.4*/
     vector<int> ivec = {1,4,2,4,6};
     list<string> slist = {"ab", "abc", "def", "g"};
-    cout << (find(ivec.begin(), ivec.end(), 6) - ivec.begin()) << endl;
-    cout << *(find(slist.begin(), slist.end(), "def")) << endl;
+    cout << (myfind(ivec.begin(), ivec.end(), 6) - ivec.begin()) << endl;
+    cout << *(myfind(slist.begin(), slist.end(), "def")) << endl;
     /*16.5*/
     int iarr[5] = {2,4,56,74,3};
     char carr[5] = "abcd";
@@ -989,5 +1005,14 @@ int main() {
 
     /*16.56*/
     errMsg(cerr, "hi", 42, 3.14, 'd', string("hi"));
+
+    /*16.58*/
+    StrVec svec = {"i", "am", "stella"};
+    cout<<"emplace"<<svec.size()<< endl;
+    svec.emplace_back("End");
+    svec.emplace_back("!!!");
+    print(cout,svec);
+ 
+ 
     return 0;
 }
