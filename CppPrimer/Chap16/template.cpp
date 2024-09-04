@@ -49,18 +49,92 @@ template<typename T, size_t N>
 constexpr size_t size(const T (&arr)[N]) {
     return N;
 }
+
+/*16.28*/
+template<typename T> 
+class SP {
+public:
+    SP(): p(nullptr), use(nullptr) {}
+    explicit SP(T* pt): p(pt), use(new size_t(1)) {}
+    SP(const SP& sp):p(sp.p), use(sp.use) {if (use) ++*use;}
+    SP& operator=(const SP&);
+    ~SP();
+    T& operator*() {return *p;}
+    T& operator*() const {return *p;}
+private:
+    T *p;
+    size_t *use;
+};
+template<typename T> 
+SP<T>::~SP() {
+    if (use && --*use == 0){
+        delete p;
+        delete use;
+    }
+}
+template<typename T> 
+SP<T>& SP<T>::operator=(const SP& sp) {
+    if (sp.use)
+        ++*sp.use;
+    if (use && --*use == 0) {
+        delete p;
+        delete use;
+    }
+    p = sp.p;
+    use = sp.use;
+    return *this;
+}
+template<typename T, class... Args>
+SP<T> make_SP(Args&&... args) {
+    return SP<T>(new T(forward<Args>(args)...));
+}
+
+template<typename T>
+class UP {
+public:
+    UP(): p(nullptr) {}
+    UP(const UP&) = delete;
+    explicit UP(T* pt): p(pt) {}
+    UP& operator=(const UP&) = delete;
+    ~UP();
+    T* release();
+    void reset(T *new_p=nullptr);
+    T& operator*() {return *p;}
+    T& operator*() const {return *p;}
+private:
+    T *p;
+};
+template<typename T>
+UP<T>::~UP() {
+    if (p)
+        delete(p);
+}
+template<typename T>
+void UP<T>::reset(T* new_p) {
+    if (p)
+        delete p;
+    p = new_p;
+}
+template<typename T>
+T* UP<T>::release() {
+    T *q = p;
+    p = nullptr;
+    return q;
+}
+
+
 /*16.12*/
 template<typename T> class Blob{
 public:
     typedef T value_type;
     typedef typename vector<T>::size_type size_type;
-    Blob(): data(make_shared<vector<T>>()) {}
-    Blob(initializer_list<T> il): data(make_shared<vector<T>>(il)) {}
-    template<typename IT>Blob(IT b, IT e): data(make_shared<vector<T>>(b, e)) {}
-    size_type size() const {return data->size();}
+    Blob(): data(make_SP<vector<T>>()) {}
+    Blob(initializer_list<T> il): data(make_SP<vector<T>>(il)) {}
+    template<typename IT>Blob(IT b, IT e): data(make_SP<vector<T>>(b, e)) {}
+    size_type size() const {return (*data).size();}
     bool empty() const {return data->empty();}
     void push_back(const T &t) {data->push_back(t);}
-    void push_back(T &&t) {data->push_back(std::move(t));}
+    void push_back(T &&t) {(*data).push_back(std::move(t));}
     void pop_back();
     T& back();
     const T& back() const;
@@ -68,13 +142,15 @@ public:
     const T& front() const;
     T& operator[](size_type i);
     const T& operator[](size_type i) const;
+    T& at(size_type);
+    const T& at(size_type) const;
 private:
-    shared_ptr<vector<T>> data;
+    SP<vector<T>> data;
     void check(size_type i, const string &msg) const;
 };
 template<typename T>
 void Blob<T>::check(size_type i, const string &msg) const {
-    if (i >= data->size())
+    if (i >= (*data).size())
         throw out_of_range(msg);
 }
 template<typename T>
@@ -110,6 +186,19 @@ const T& Blob<T>::front() const {
 template<typename T> void Blob<T>::pop_back() {
     check(0, "pop_back on empty Blob");
     data->pop_back();
+}
+template <typename T>
+T& Blob<T>::at(size_type i) 
+{
+	check(i, "subscript out of range");
+	return (*data)[i]; 
+}
+template <typename T>
+const T&
+Blob<T>::at(size_type i) const
+{
+	check(i, "subscript out of range");
+	return (*data)[i];
 }
 template<typename T> class BlobPtr{
 public:
@@ -517,7 +606,286 @@ QueryResult TextQuery::query(const string &s) {
     return qr;
 }
 
+/*16.41*/
+template<typename T1, typename T2>
+auto sum(T1 a, T2 b) -> decltype(a + b) {
+    return (a + b);
+}
+/*16.47*/
+template<typename F, typename T1, typename T2>
+void flip(F f, T1 &&t1, T2 &&t2) {
+    f(std::forward<T2>(t2), std::forward<T1>(t1));
+}
+template<typename F, typename T1, typename T2>
+void flip1(F f, T1 t1, T2 t2) {
+    f(t2, t1);
+}
+template<typename F, typename T1, typename T2>
+void flip2(F f, T1&& t1, T2&& t2) {
+    f(t2, t1);
+}
+void f(int v1, int &v2) {
+    cout << v1 << " " << ++v2 << endl;
+}
+void g(int &&i, int& j) {
+    cout << i << " " << j << endl;
+}
+/*16.48*/
+template<typename T> string debug_rep(const T &t) {
+    ostringstream ret;
+    ret << t;
+    return ret.str();
+}
+template<typename T> string debug_rep(T* p) {
+    ostringstream ret;
+    ret << "pointer: " << p;
+    if (p)
+        ret << " " << debug_rep(*p);
+    else
+        ret << " null pointer";
+    return ret.str();
+}
+string debug_rep(const string &s) {
+     return '"'+s+'"';
+}
+string debug_rep(char *p) 
+{
+	return debug_rep(std::string(p));
+}
+string debug_rep(const char *p) 
+{
+	return debug_rep(std::string(p));
+}
+template<typename T, typename... Args>
+void foo(const T &t, const Args& ... rest) {
+    cout << sizeof...(Args) << endl;
+    cout << sizeof...(rest) << endl;
+}
+
+/*16.53*/
+template<typename T>
+ostream &print(ostream& os, const T &t) {
+    return os<<t<<endl;
+}
+template<typename T, typename... Args> 
+ostream &print(ostream& os, const T &t, const Args&... rest) {
+    os << t << ", ";
+    return print(os, rest...);
+}
+
+/*16.56*/
+template<typename... Args>
+ostream &errMsg(ostream& os, const Args&... rest) {
+    return print(os, debug_rep(rest)...);
+}
+
+/*16.58*/
+class StrVec {
+public:
+    StrVec(): elements(nullptr), first_free(nullptr), cap(nullptr) {}
+    StrVec(initializer_list<string>);
+    StrVec(const StrVec&);
+    StrVec &operator=(const StrVec&);
+    StrVec(StrVec &&) noexcept;
+    StrVec &operator=(StrVec &&) noexcept;
+    ~StrVec();
+    StrVec &operator=(initializer_list<string>);
+    void push_back(const string&);
+    size_t size() const {return first_free - elements;}
+    size_t capacity() const {return cap - elements;}
+    string *begin() const {return elements;}
+    string *end() const {return first_free;}
+    void reserve(size_t n) {if (n > capacity()) reallocate(n);}
+    inline void resize(size_t);
+    inline void resize(size_t, const string &);
+    string& operator[] (size_t i) { return elements[i];}
+    const string& operator[] (size_t i) const {return elements[i];}
+    template<class... Args> void emplace_back(Args&&...);
+private:
+    static allocator<string> alloc;
+    void chk_n_alloc() { if (size() == capacity()) reallocate();}
+    pair<string*, string*> alloc_n_copy(const string*, const string*);
+    void free();
+    inline void reallocate();
+    inline void reallocate(size_t);
+    string *elements;
+    string *first_free;
+    string *cap;
+friend bool operator==(const StrVec&, const StrVec&);
+friend bool operator< (const StrVec&, const StrVec&);
+friend bool operator<= (const StrVec&, const StrVec&);
+friend bool operator> (const StrVec&, const StrVec&);
+friend bool operator>= (const StrVec&, const StrVec&);
+};
+allocator<string> StrVec::alloc;
+void StrVec::push_back(const string& s) {
+    chk_n_alloc();
+    alloc.construct(first_free++, s);
+}
+pair<string*, string*> StrVec::alloc_n_copy(const string *b, const string *e) {
+    auto data = alloc.allocate(e - b);
+    return {data, uninitialized_copy(b, e, data)};
+
+}
+void StrVec::free() {
+    if (elements) {
+        for_each(elements, first_free, 
+                [](string &s){alloc.destroy(&s);});
+        alloc.deallocate(elements, cap - elements);
+    }
+}
+StrVec::StrVec(initializer_list<string> il) {
+    auto newdata = alloc_n_copy(il.begin(), il.end());
+    elements = newdata.first;
+    first_free = cap = newdata.second;
+}
+StrVec::StrVec(const StrVec &s) {
+    auto newdata = alloc_n_copy(s.begin(), s.end());
+    elements = newdata.first;
+    first_free = cap = newdata.second;
+}
+StrVec::~StrVec() {
+    free();
+}
+StrVec& StrVec::operator=(const StrVec &rhs) {
+    auto data = alloc_n_copy(rhs.begin(), rhs.end());
+    free();
+    elements = data.first;
+    first_free = cap = data.second;
+    return *this;
+}
+StrVec::StrVec(StrVec &&rhs) noexcept : elements(rhs.elements),
+                              first_free(rhs.first_free),
+                              cap(rhs.cap) {
+    rhs.elements = nullptr;
+    rhs.first_free = nullptr;
+    rhs.cap = nullptr;
+}
+StrVec &StrVec::operator=(StrVec &&rhs) noexcept {
+    if (this != &rhs) {
+        free();
+        elements = rhs.elements;
+        first_free = rhs.first_free;
+        cap = rhs.cap;
+        rhs.elements = nullptr;
+        rhs.first_free = nullptr;
+        rhs.cap = nullptr;
+    }
+    return *this;
+}
+StrVec& StrVec::operator=(initializer_list<string> il) {
+    auto data = alloc_n_copy(il.begin(), il.end());
+    free();
+    elements = data.first;
+    first_free = cap = data.second;
+    return *this;
+}
+bool operator==(const StrVec& lhs, const StrVec& rhs){
+    if (lhs.size() != rhs.size()) return false;
+    for (auto iter1 = lhs.begin(), iter2 = rhs.begin(); 
+        iter1 != lhs.end() && iter2 != rhs.end(); 
+        iter1++, iter2++) {
+            if (*iter1 != *iter2)
+                return false;
+        }
+    return true;
+}
+bool operator!=(const StrVec& lhs, const StrVec& rhs) {
+    return !(lhs == rhs);
+}
+bool operator< (const StrVec& lhs, const StrVec& rhs) {
+    auto p1 = lhs.begin(), p2 = rhs.begin();
+    for (; p1 != lhs.end() && p2 != rhs.end(); p1++, p2++) 
+        if (*p1 < *p2)
+            return true;
+        else if (*p1 > *p2)
+            return false;
+    if (p1 == lhs.end() && p2 != rhs.end())
+        return true;
+    return false;
+}
+bool operator<= (const StrVec& lhs, const StrVec& rhs) {
+    auto p1 = lhs.begin(), p2 = rhs.begin();
+    for (; p1 != lhs.end() && p2 != rhs.end(); p1++, p2++) 
+        if (*p1 < *p2)
+            return true;
+        else if (*p1 > *p2)
+            return false;
+    if (p1 == lhs.end())
+        return true;
+    return false;
+}
+bool operator> (const StrVec& lhs, const StrVec& rhs) {
+    auto p1 = lhs.begin(), p2 = rhs.begin();
+    for (; p1 != lhs.end() && p2 != rhs.end(); p1++, p2++) 
+        if (*p1 < *p2)
+            return false;
+        else if (*p1 > *p2)
+            return true;
+    if (p1 != lhs.end() && p2 == rhs.end())
+        return true;
+    return false;
+}
+bool operator>= (const StrVec& lhs, const StrVec& rhs) {
+    auto p1 = lhs.begin(), p2 = rhs.begin();
+    for (; p1 != lhs.end() && p2 != rhs.end(); p1++, p2++) 
+        if (*p1 < *p2)
+            return false;
+        else if (*p1 > *p2)
+            return true;
+    if (p2 == rhs.end())
+        return true;
+    return false;
+}
+
+void StrVec::reallocate(){
+    auto newcapacity = size() ? 2 * size() : 1;
+    auto first = alloc.allocate(newcapacity);
+    auto last = uninitialized_copy(make_move_iterator(begin()), 
+                                    make_move_iterator(end()),
+                                    first);   
+    free();
+    elements = first;
+    first_free = last;
+    cap = elements + newcapacity;
+}
+void StrVec::reallocate(size_t newcapacity){
+    auto newdata = alloc.allocate(newcapacity);
+    auto dest = newdata;
+    auto elem = elements;
+    for (size_t i = 0; i != size(); ++i) {
+        alloc.construct(dest++, std::move(*elem++));
+    }
+    free();
+    elements = newdata;
+    first_free = dest;
+    cap = elements + newcapacity;
+}
+inline void StrVec::resize(size_t n) {
+    if (n > size()) {
+        while(size() < n) {
+            push_back("");
+        }
+    } else if(n < size()) {
+        while(size() > n) {
+            alloc.destroy(--first_free);
+        }
+    }
+}
+inline void StrVec::resize(size_t n, const string &s) {
+    if (n > size()) {
+        while(size() < n) {
+            push_back(s);
+        }
+    }
+}
+template<class... Args> inline void StrVec::emplace_back(Args&&... args) {
+    chk_n_alloc();
+    alloc.construct(first_free++, std::forward<Args>(args)...);
+}
+
 int main() {
+
     /*16.4*/
     vector<int> ivec = {1,4,2,4,6};
     list<string> slist = {"ab", "abc", "def", "g"};
@@ -564,7 +932,62 @@ int main() {
     infile.close();
     cin.clear();
 
+    /*16.30*/
+    Blob<string> b1;
+    cout << b1.size() << endl;
+    {
+        Blob<string> b2 = {"a", "an", "the"};
+        b1 = b2;
+        b2.push_back("about");
+        cout << b1.size() << " " << b2.size() << endl;
+    }
+    cout << b1.size() << endl;
+    for (size_t i=0; i<b1.size(); ++i) cout << b1.at(i) << " ";
+    cout << endl <<endl;
+    UP<int> u1(new int(42));
+    cout << *u1 <<endl;
+    UP<int> u2(u1.release());
+    cout << *u2 <<endl;
 
+    /*16.39*/
+    auto i39 = compare<string>("hello", "world!");
 
+    /*16.47*/
+    int i=0, j=0, k=0, l=0;
+    cout << i << j << k << l << endl;
+    f(42, i);
+    cout << i << j << k << l << endl;
+    flip1(f, j, 42);
+    cout << i << j << k << l << endl;
+    flip2(f, k, 42);
+    cout << i << j << k << l << endl;
+    g(42, i);
+    cout << i << j << k << l << endl;
+    //flip2(g, i, 42);
+    flip(g,i,42);
+    cout << i << j << k << l << endl;
+
+    /*16.48*/
+	string s("hi");
+	cout << debug_rep(s) << endl; 
+	cout << debug_rep(&s) << endl;
+    const string *sp = &s;
+    cout << debug_rep(sp) << endl; 
+    cout << debug_rep("hi world!") << endl;
+    
+    /*16.51*/
+    int i51 = 0; double d51 = 3.14; string s51 = "how now brown cow";
+    foo(i51, s51, 42, d51);
+    foo(s51, 42, "hi");
+    foo(d51, s51);
+    foo("hi");
+    
+    /*16.53*/
+    print(cout, "hi");
+    print(cout, "hi", 42);
+    print(cout, "hi", 42, 3.14, 'd', string("hi"));
+
+    /*16.56*/
+    errMsg(cerr, "hi", 42, 3.14, 'd', string("hi"));
     return 0;
 }
