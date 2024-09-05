@@ -660,14 +660,18 @@ template<typename T> string debug_rep(T* p) {
 string debug_rep(const string &s) {
      return '"'+s+'"';
 }
+template<>
 string debug_rep(char *p) 
 {
 	return debug_rep(std::string(p));
 }
+template<>
 string debug_rep(const char *p) 
 {
 	return debug_rep(std::string(p));
 }
+
+
 template<typename T, typename... Args>
 void foo(const T &t, const Args& ... rest) {
     cout << sizeof...(Args) << endl;
@@ -1095,6 +1099,6 @@ int main() {
     string c = "1";
     cout << stat(cvec63, c.c_str()) << endl;
 
-
+ 
     return 0;
 }
