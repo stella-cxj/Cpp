@@ -2,12 +2,15 @@
 #include <sstream>
 #include <fstream>
 #include <string>
+#include <cstring>
 #include <vector>
 #include <list>
 #include <memory>
 #include <set>
 #include <map>
 #include <algorithm>
+#include <functional>
+#include <unordered_set>
 
 using namespace std;
 
@@ -898,6 +901,58 @@ template<class... Args> inline void StrVec::emplace_back(Args&&... args) {
     chk_n_alloc();
     alloc.construct(first_free++, std::forward<Args>(args)...);
 }
+/*16.62*/
+class Sales_data {
+public:
+    Sales_data() = default;
+    Sales_data(const string &s, unsigned n, double p) : bookNo(s), units_sold(n), revenue(p*n) {}
+    Sales_data(const string &s) : bookNo(s) {}
+    string isbn() const {return bookNo;}
+
+private:
+    double avg_price() const {return units_sold ? revenue/units_sold : 0;}
+    string bookNo;
+    unsigned units_sold = 0;
+    double revenue = 0.0;
+friend class hash<Sales_data>;
+friend bool operator==(const Sales_data &, const Sales_data &);
+friend ostream &operator<< (ostream&, const Sales_data&);
+};
+inline bool operator==(const Sales_data &lhs, const Sales_data &rhs) {
+    return lhs.isbn() == rhs.isbn() &&
+            lhs.revenue == rhs.revenue &&
+            lhs.units_sold == rhs.units_sold;
+}
+ostream &operator<< (ostream& os, const Sales_data& s) {
+    os << s.isbn() << " " << s.units_sold << " " << s.revenue;
+    return os;
+}
+namespace std{
+template<>
+struct hash<Sales_data> {
+    size_t operator()(const Sales_data& s) const {
+        return hash<string>()(s.bookNo) ^ 
+                hash<double>()(s.revenue) ^ 
+                hash<unsigned>()(s.units_sold) ;
+    }
+};
+}
+/*16.63*/
+template<typename T>
+int stat(vector<T> &vec, T val) {
+    int ret = 0;
+    for (auto i : vec)
+        if (i == val) ret++;
+    return ret;
+}
+/*16.64*/
+template<>
+int stat(vector<const char*> &vec, const char* val) {
+    int ret = 0;
+    for (auto i : vec)
+        if (!strcmp(i, val))  ret++;
+    return ret;
+}
 
 
 int main() {
@@ -1013,6 +1068,33 @@ int main() {
     svec.emplace_back("!!!");
     print(cout,svec);
  
- 
+    /*16.62*/
+    unordered_multiset<Sales_data> SDset;
+    SDset.insert({"ghi", 1, 1.0});
+    SDset.insert({"def", 2, 2.0});
+    SDset.insert({"abc", 3, 3.0});
+    cout << SDset.size() << endl;
+    for (auto sd : SDset) 
+        cout << sd << endl;
+
+    /*16.63*/
+    vector<int> ivec63 = {1,23,6,123,2,5,1,2,1};
+    cout << stat(ivec63, 1) << endl;
+    vector<double> dvec63 = {1,23,6,123,2,5,1,2,1};
+    cout << stat(dvec63, 1.0) << endl;
+    vector<string> svec63 = {"1","23","6","123","2","5","1","2","1"};
+    cout << stat(svec63, string("1")) << endl;
+    
+    vector<const char *> cvec63;
+    const char* c1 = "1";
+    const char* c2 = "23";
+    const char* c3 = "6";
+    cvec63.push_back(c1);
+    cvec63.push_back(c2);
+    cvec63.push_back(c3);
+    string c = "1";
+    cout << stat(cvec63, c.c_str()) << endl;
+
+
     return 0;
 }
