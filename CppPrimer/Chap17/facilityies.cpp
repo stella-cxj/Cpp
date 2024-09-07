@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <numeric>
 #include <bitset>
+#include <regex>
 
 using namespace std;
 
@@ -262,5 +263,27 @@ int main() {
     bitset<80> a;
     cout << e.get_size() << " questions, corret: " << e.score(a) << endl;
 
+    /*17.14*/
+    try {
+        regex r("[[:alnum:]]+\\.(cpp|cxx|cc)$", regex::icase);
+        smatch results;
+        string filename;
+        cout << "Please enter a file name:" << endl;
+        while(cin >> filename)
+            if (regex_search(filename, results, r))
+                cout << results.str() << endl;
+    } catch (regex_error e)
+    {cout << e.what() << "\ncode: " << e.code() << endl;}
+    cin.clear();
+
+    /*17.15*/
+    regex r("[[:alpha:]]*[^c]ei[[:alpha:]]*");
+    smatch results;
+    string s = "freind thief theif friend receipt reciept";
+    for (sregex_iterator it(s.begin(), s.end(), r), end_it; it != end_it; ++it)
+        cout << it->str() << endl;
+
+
+        
     return 0;
 }
