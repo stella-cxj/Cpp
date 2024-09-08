@@ -11,6 +11,7 @@
 #include <numeric>
 #include <bitset>
 #include <regex>
+#include <random>
 
 using namespace std;
 
@@ -213,7 +214,28 @@ size_t exam<N>::score(const bitset<N> &a) {
             ret++;
     return ret;
 }
+/*17.20*/
+bool valid(const smatch& m) {
+    if (m[1].matched)
+        return m[3].matched && 
+            (m[4].matched == 0 || (m[4].str() != "-" && m[4].str() != "."));
+    else
+        return !m[3].matched && 
+            ((m[4].str() == "-" && m[6].str() == "-") ||
+            (m[4].str() == "." && m[6].str() == ".") ||
+            (m[4].str() != "-" && m[4].str() == "." && m[6].str() != "-" && m[6].str() == "."));
+}
 
+/*17.28*/
+unsigned int random(long seed = -1, long min = 1, long max = 0) {
+    static uniform_int_distribution<unsigned> u(0, 9999);
+    static default_random_engine e;
+    if (seed >= 0)
+        e.seed(seed);
+    if (min <= max)
+        u = uniform_int_distribution<unsigned>(min, max);
+    return u(e);
+}
 int main() {
 
     /*17.1*/
@@ -283,7 +305,64 @@ int main() {
     for (sregex_iterator it(s.begin(), s.end(), r), end_it; it != end_it; ++it)
         cout << it->str() << endl;
 
+    /*17.20*/
+    string phone = "(\\()?(\\d{3})(\\))?([-.]|(\\s)*)?(\\d{3})([-.]|(\\s)*)?(\\d{4})";
+    regex re(phone);
+    smatch m;
+    string ss;
+    ifstream infile20("phonesFinal");
+    while(getline(infile20, ss)) {
+        for (sregex_iterator it(ss.begin(), ss.end(), re), end_it; it != end_it; ++it) {
+            if (valid(*it))
+                cout << "Valid: " << it->str() << endl;
+            else
+                cout << "Invalid: " << it->str() << endl;
+        }
+    }
+    infile20.close();
 
-        
+    /*17.23*/
+    string code = "(\\d{5})((-?)(\\d{4}))?";
+    
+    /*17.24*/
+    string phone24 = "(\\()?(\\d{3})(\\))?([-. ])?(\\d{3})([-. ])?(\\d{4})";
+    regex r24(phone24);
+    smatch m24;
+    string s24;
+    string fmt = "$2.$5.$7";
+    ifstream infile24("phonesFinal");
+    while(getline(infile24, s24)) {
+        cout << regex_replace(s24, r24, fmt) << endl;
+    }
+    infile24.close();
+
+    /*17.28*/
+    for (auto i = 0; i < 10; i++)
+        cout << random() << " ";
+    cout << endl;
+    cout << random(0) << " ";
+    for (auto i = 0; i < 9; i++)
+        cout << random() << " ";
+    cout << endl;
+    cout << random(19743) << " ";
+    for (auto i = 0; i < 9; i++)
+        cout << random() << " ";
+    cout << endl;
+    cout << random(19743, 0, 5000) << " ";
+    for (auto i = 0; i < 9; i++)
+        cout << random() << " ";
+    cout << endl;
+   
+
+default_random_engine ee;
+normal_distribution<> n(4, 1.5);
+vector<unsigned> vals(9);
+for (size_t i=0;i!=200;++i) {
+    unsigned v = lround(n(ee));
+    if (v<vals.size()) ++vals[v];
+}
+for (size_t j=0; j!=vals.size();++j)
+    cout<<j<<": " << string(vals[j], '*')<<endl;
+
     return 0;
 }
