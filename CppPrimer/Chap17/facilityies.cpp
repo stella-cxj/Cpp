@@ -12,6 +12,7 @@
 #include <bitset>
 #include <regex>
 #include <random>
+#include <iomanip>
 
 using namespace std;
 
@@ -353,16 +354,52 @@ int main() {
         cout << random() << " ";
     cout << endl;
    
+    /*17.4.2*/
+    default_random_engine ee;
+    normal_distribution<> n(4, 1.5);
+    vector<unsigned> vals(9);
+    for (size_t i=0;i!=200;++i) {
+        unsigned v = lround(n(ee));
+        if (v<vals.size()) ++vals[v];
+    }
+    for (size_t j=0; j!=vals.size();++j)
+        cout<<j<<": " << string(vals[j], '*')<<endl;
 
-default_random_engine ee;
-normal_distribution<> n(4, 1.5);
-vector<unsigned> vals(9);
-for (size_t i=0;i!=200;++i) {
-    unsigned v = lround(n(ee));
-    if (v<vals.size()) ++vals[v];
-}
-for (size_t j=0; j!=vals.size();++j)
-    cout<<j<<": " << string(vals[j], '*')<<endl;
+    /*17.34*/
+    cout << unitbuf;
+    cout<<setw(20) <<"default format:" << 100*sqrt(2.0)<<'\n'
+        <<setw(20) <<"scientific: "<<scientific<<100*sqrt(2.0)<<'\n'
+        <<setw(20) <<"fixed decimal:" << fixed<<100*sqrt(2.0)<<'\n'
+        <<setw(20) <<"hexadecimal:" << hexfloat<<100*sqrt(2.0)<<'\n'
+        <<setw(20) <<"use defaults: "<<defaultfloat<<100*sqrt(2.0)<<"\n\n";
+    cout<<nounitbuf;
+    cout<<"hi!"<<endl;
+    cout<<"hi!"<<flush;
+    cout<<"hi!"<<ends;
+    char ch;
+    cin >> noskipws;
+    while(cin>>ch)
+        cout<<ch;
+    cout<<endl;cin.clear();
+    cin>>skipws;
+    while(cin>>ch)
+        cout<<ch;    
+    cout<<endl;cin.clear();
 
+    /*17.37*/
+    ifstream in("phonesFinal");
+    char line[50];
+    while(!in.eof()) {
+        in.getline(line, 30);
+        cout<<line;
+        //cout<<in.gcount()<<endl;
+        if (!in.good())
+            if (in.gcount() == 29) 
+                in.clear();
+            else
+                break;
+        else    
+            cout <<endl;
+    }
     return 0;
 }
