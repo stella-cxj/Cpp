@@ -129,7 +129,7 @@ double Basket::total_receipt(ostream& os) const {
     os << "Total Sale: " << sum << endl; 
     return sum;
 }
-
+namespace chapter10 {
 void trans(string &s) {
 
     for (auto i = s.begin(); i != s.end();) {
@@ -222,7 +222,10 @@ QueryResult TextQuery::query(const string &sought) const
 	else 
 		return QueryResult(sought, loc->second, file);
 }
-
+}
+namespace chapter15 { 
+using chapter10::QueryResult;
+using chapter10::TextQuery;
 class Query_base {
 friend class Query;
 protected:
@@ -318,7 +321,7 @@ QueryResult OrQuery::eval(const TextQuery& text) const {
     ret_lines->insert(right.begin(), right.end());
     return QueryResult(rep(), ret_lines, left.get_file());
 }
-
+}
 
 int main() {
     
@@ -354,10 +357,11 @@ int main() {
     cout << "sum= " << sum << endl;
 
     /*15.36*/
+    using chapter15::Query;
     ifstream file("words");
-    TextQuery tQuery(file);
+    chapter10::TextQuery tQuery(file);
     Query qu = Query("fiery") & Query("bird") | Query("wind");
-    print(cout, qu.eval(tQuery));
+    chapter10::print(cout, qu.eval(tQuery));
 
     return 0;
 }
