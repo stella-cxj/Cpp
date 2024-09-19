@@ -151,30 +151,9 @@ void trans(string &s) {
     }
 }
 
-class QueryResult {
-public:
-    QueryResult() = default;
-    QueryResult(shared_ptr<vector<string>> txt, shared_ptr<set<int>> lineno, const string &str) : text(txt), line_no(lineno), s(str) {}
-    ostream & print(ostream & os) const {
-        os << this->s << " occurs " << this->line_no->size() << " times." << endl;
-        for (auto i = this->line_no->begin(); i != this->line_no->end(); i++) {
-            os << "\t" << "(line " << *i << ") " << (*(this->text))[*i - 1] << endl;
-        }
-        return os;
-    }
-    set<int>::iterator begin() {return line_no->begin();}
-    set<int>::iterator end() {return line_no->end();}
-    shared_ptr<vector<string>> get_file() {return text;}
-    ~QueryResult() {}
-private:
-    int total_time = 0;
-    string s;
-    shared_ptr<vector<string>> text;
-    shared_ptr<set<int>> line_no;
-};
-
 class TextQuery {
 public:
+    class QueryResult;
     TextQuery() = default;
     TextQuery(ifstream &);
     QueryResult query(const string &);
@@ -202,7 +181,29 @@ TextQuery::TextQuery (ifstream &in) {
     }
 }
 
-QueryResult TextQuery::query(const string &s) {
+class TextQuery::QueryResult {
+public:
+    QueryResult() = default;
+    QueryResult(shared_ptr<vector<string>> txt, shared_ptr<set<int>> lineno, const string &str) : text(txt), line_no(lineno), s(str) {}
+    ostream & print(ostream & os) const {
+        os << this->s << " occurs " << this->line_no->size() << " times." << endl;
+        for (auto i = this->line_no->begin(); i != this->line_no->end(); i++) {
+            os << "\t" << "(line " << *i << ") " << (*(this->text))[*i - 1] << endl;
+        }
+        return os;
+    }
+    set<int>::iterator begin() {return line_no->begin();}
+    set<int>::iterator end() {return line_no->end();}
+    shared_ptr<vector<string>> get_file() {return text;}
+    ~QueryResult() {}
+private:
+    int total_time = 0;
+    string s;
+    shared_ptr<vector<string>> text;
+    shared_ptr<set<int>> line_no;
+};
+
+TextQuery::QueryResult TextQuery::query(const string &s) {
     auto pset = make_shared<set<int>>(this->word_line[s]);
     QueryResult qr(this->text, pset, s);
     return qr;
@@ -374,7 +375,7 @@ int main() {
         cout << "1. enter word to look for, or q to quit: ";
         string s;
         if (!(cin >> s) || s == "q") break;
-        const QueryResult& qr = tq.query(s);
+        const TextQuery::QueryResult& qr = tq.query(s);
         qr.print(cout) << endl;
     }
     infile.close();
